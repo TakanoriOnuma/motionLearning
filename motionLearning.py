@@ -13,9 +13,12 @@ import os
 import cv2
 
 # ディレクトリの作成
-def createDir():
+def createDir(trainTypes):
     if not os.path.exists('output'):
         os.mkdir('output')
+    for trainType in trainTypes:
+        if not os.path.exists('output/{0}'.format(trainType)):
+            os.mkdir('output/{0}'.format(trainType))
 
 # キリのいい数値か調べる
 def isRoundNumber(num):
@@ -29,11 +32,11 @@ def isRoundNumber(num):
     return all(digit == 0 for digit in digits)
 
 # 入力データリストを作成する
-def createInputDataList(mnistNumList, trainDataNum):
+def createInputDataList(mnistNumList, dataType, trainType, trainDataNum):
     inpList = []
     for num in mnistNumList:
         for i in range(trainDataNum):
-            fileName = 'MNIST/{0}/{1}/mnist{2}.png'.format('train', num, i)
+            fileName = 'MNIST/{0}/{1}/{2}/mnist{3}.png'.format(dataType, trainType, num, i)
             img = cv2.imread(fileName)
             inpList.append(makeInputData(img))
     return inpList
@@ -78,16 +81,25 @@ class MyChain(ChainList):
         return self.value[-1]
 
 MNIST_NUM_LIST = [0, 1, 4]
-createDir()
 
-gpuFlag = False
+# set properties
+gpuFlag  = True
+dataType = 'normal'
+
+trainTypes = ['train', 'test']
+
+createDir(trainTypes)
 
 # input and output vector
-x_train = np.array(createInputDataList(MNIST_NUM_LIST, 100)).astype(np.float32)
-N = len(x_train)
+N = 100
+inpDataList = {}
+for trainType in trainTypes:
+    dataList = createInputDataList(MNIST_NUM_LIST, dataType, trainType, N)
+    inpDataList[trainType] = np.array(dataList).astype(np.float32)
+N = 3 * N
 
 # get image size
-IMG_SIZE   = len(x_train[0])
+IMG_SIZE   = len(inpDataList['train'][0])
 IMG_HEIGHT = int(math.sqrt(IMG_SIZE))
 IMG_WIDTH  = IMG_HEIGHT
 
@@ -106,6 +118,32 @@ times = 500
 # main routine
 batchsize = 1
 for epoch in range(0, times + 1):
+    # write log
+    if isRoundNumber(epoch):
+        print "{0}:".format(epoch),
+        for trainType in trainTypes:
+            if gpuFlag:
+                x = Variable(cuda.cupy.asarray(inpDataList[trainType]))
+                t = Variable(x.data)
+            else:
+                x = Variable(inpDataList[trainType])
+                t = Variable(x.data)
+
+            y = model(x)
+            loss = F.mean_squared_error(y, t)
+            print 0.5 * loss.data,
+
+            # save output image
+            if not os.path.exists('output/{0}/{1}'.format(trainType, epoch)):
+                os.mkdir('output/{0}/{1}'.format(trainType, epoch))
+            for i in range(N):
+                if gpuFlag:
+                    img = cuda.to_cpu(makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH))
+                else:
+                    img = makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH)
+                cv2.imwrite('output/{0}/{1}/mnist{2}.png'.format(trainType, epoch, i), img)
+        print ""
+        
     sum_loss = 0
     perm = np.random.permutation(N)
     for i in range(0, N, batchsize):
@@ -114,25 +152,14 @@ for epoch in range(0, times + 1):
 
         # extract input and output
         if gpuFlag:
-            x = Variable(cuda.cupy.asarray(x_train[perm[i:i + batchsize]]))
-            t = Variable(cuda.cupy.asarray(x_train[perm[i:i + batchsize]]))
+            x = Variable(cuda.cupy.asarray(inpDataList['train'][perm[i:i + batchsize]]))
+            t = Variable(x.data)
         else:
-            x = Variable(x_train[perm[i:i + batchsize]])
-            t = Variable(x_train[perm[i:i + batchsize]])
+            x = Variable(inpDataList['train'][perm[i:i + batchsize]])
+            t = Variable(x.data)
         
         # estimation by model
         y = model(x)
-
-        # save output image
-        if isRoundNumber(epoch):
-            if not os.path.exists('output/{0}'.format(epoch)):
-                os.mkdir('output/{0}'.format(epoch))
-            for j in range(0, batchsize):
-                if gpuFlag:
-                    img = cuda.to_cpu(makeOutputData(y.data[j], IMG_HEIGHT, IMG_WIDTH))
-                else:
-                    img = makeOutputData(y.data[j], IMG_HEIGHT, IMG_WIDTH)
-                cv2.imwrite('output/{0}/mnist{1}.png'.format(epoch, perm[i + j]), img)
 
         # error correction
         loss = F.mean_squared_error(y, t)
@@ -141,6 +168,7 @@ for epoch in range(0, times + 1):
         # feedback and learning
         loss.backward()
         optimizer.update()
+    
 
-    print "{0}: {1}".format(epoch + 1, 0.5 * sum_loss.data / N)
+
     
