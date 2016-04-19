@@ -68,15 +68,20 @@ def makeOutputData2(out):
     return img
 
 class MyChain(ChainList):
-    def __init__(self):
-        super(MyChain, self).__init__(
-            L.Linear(784, 100, nobias=True, initialW=np.random.randn(100, 784)),
-            L.Linear(100, 30, nobias=True, initialW=np.random.randn(30, 100)),
-            L.Linear(30, 2, nobias=True, initialW=np.random.randn(2, 30)),
-            L.Linear(2, 30, nobias=True, initialW=np.random.randn(30, 2)),
-            L.Linear(30, 100, nobias=True, initialW=np.random.randn(100, 30)),
-            L.Linear(100, 784, nobias=True, initialW=np.random.randn(784, 100))
-        )
+    def __init__(self, *layers, **options):
+        super(MyChain, self).__init__()
+        opt = {
+            'bias' : False,
+            'geneFuncW' : np.random.randn
+        }
+        for key in options:
+            if key not in opt.keys():
+                print 'undefined key: {0}'.format(key)
+            opt[key] = options[key]
+            
+        for i in range(len(layers) - 1):
+            initW = opt['geneFuncW'](layers[i + 1], layers[i])
+            self.add_link(L.Linear(layers[i], layers[i + 1], nobias=(not opt['bias']), initialW=initW))
 
     def __call__(self, x):
         self.value = [None] * (len(self) + 1)
@@ -88,10 +93,11 @@ class MyChain(ChainList):
 MNIST_NUM_LIST = [0, 1, 4]
 createDir()
 
-gpuFlag = True
+gpuFlag = False
 
 # model definition
-model = MyChain()
+model = MyChain(784, 100, 30, 2, 30, 100, 784, bias=True)
+
 if gpuFlag:
     model.to_gpu()
 optimizer = optimizers.MomentumSGD(5.0, 0.8)
