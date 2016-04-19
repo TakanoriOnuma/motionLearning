@@ -6,6 +6,7 @@ import chainer.links as L
 from chainer import Variable, FunctionSet, optimizers, cuda
 from chainer import Link, Chain, ChainList
 
+import math
 import random
 from PIL import Image
 import os
@@ -33,38 +34,24 @@ def createInputDataList(mnistNumList, trainDataNum):
     for num in mnistNumList:
         for i in range(trainDataNum):
             fileName = 'MNIST/{0}/{1}/mnist{2}.png'.format('train', num, i)
-            img = Image.open(fileName)
+            img = cv2.imread(fileName)
             inpList.append(makeInputData(img))
     return inpList
 
 # 画像から入力データを作成する
 def makeInputData(img):
-    inpData = []
-    for y in range(img.size[1]):
-        for x in range(img.size[0]):
-            value = img.getpixel((x, y))[0] / 255.0
-            value = 0.8 * value + 0.1
-            inpData.append(value)
-    return inpData
+    data = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    data = data.reshape(data.shape[0] * data.shape[1]).astype('float32')
+    #data = 0.8 * (data / 255.0) + 0.1
+    data = data / 318.75 + 0.1
+    return data    
 
 # 出力データから画像を作成する
-def makeOutputData(out):
-    img = Image.new('RGB', (28, 28))
-    for x in range(img.size[0]):
-        for y in range(img.size[1]):
-            value = out[y * img.size[0] + x] - 0.1
-            value = value if value > 0.0 else 0.0
-            value = (value / 0.8) * 255
-            value = int(value)
-            img.putpixel((x, y), (value, value, value))
-    return img
-
-# 高速化を考慮して、出力データから画像を作成する
-def makeOutputData2(out):
+def makeOutputData(out, height, width):
     #img = 255 * (out - 0.1) / 0.8
     img = 318.75 * (out - 0.1)
     img = np.clip(img, 0.0, 255.0)
-    img = img.astype('uint8').reshape((28, 28))
+    img = img.astype('uint8').reshape((height, width))
     return img
 
 class MyChain(ChainList):
@@ -95,8 +82,17 @@ createDir()
 
 gpuFlag = False
 
+# input and output vector
+x_train = np.array(createInputDataList(MNIST_NUM_LIST, 100)).astype(np.float32)
+N = len(x_train)
+
+# get image size
+IMG_SIZE   = len(x_train[0])
+IMG_HEIGHT = int(math.sqrt(IMG_SIZE))
+IMG_WIDTH  = IMG_HEIGHT
+
 # model definition
-model = MyChain(784, 100, 30, 2, 30, 100, 784, bias=True)
+model = MyChain(IMG_SIZE, 100, 30, 2, 30, 100, IMG_SIZE, bias=True)
 
 if gpuFlag:
     model.to_gpu()
@@ -107,13 +103,9 @@ optimizer.setup(model)
 # number of learning
 times = 500
 
-# input and output vector
-x_train = np.array(createInputDataList(MNIST_NUM_LIST, 100)).astype(np.float32)
-N = len(x_train)
-
 # main routine
 batchsize = 1
-for epoch in range(0, times):
+for epoch in range(0, times + 1):
     sum_loss = 0
     perm = np.random.permutation(N)
     for i in range(0, N, batchsize):
@@ -137,9 +129,9 @@ for epoch in range(0, times):
                 os.mkdir('output/{0}'.format(epoch))
             for j in range(0, batchsize):
                 if gpuFlag:
-                    img = cuda.to_cpu(makeOutputData2(y.data[j]))
+                    img = cuda.to_cpu(makeOutputData(y.data[j], IMG_HEIGHT, IMG_WIDTH))
                 else:
-                    img = makeOutputData2(y.data[j])
+                    img = makeOutputData(y.data[j], IMG_HEIGHT, IMG_WIDTH)
                 cv2.imwrite('output/{0}/mnist{1}.png'.format(epoch, perm[i + j]), img)
 
         # error correction
@@ -152,4 +144,3 @@ for epoch in range(0, times):
 
     print "{0}: {1}".format(epoch + 1, 0.5 * sum_loss.data / N)
     
-
