@@ -32,18 +32,18 @@ def isRoundNumber(num):
     return all(digit == 0 for digit in digits)
 
 # 入力データリストを作成する
-def createInputDataList(mnistNumList, dataType, trainType, trainDataNum):
+def createInputDataList(dataType, trainType, trainDataNum):
     inpList = []
-    for num in mnistNumList:
-        for i in range(trainDataNum):
-            fileName = 'MNIST/{0}/{1}/{2}/mnist{3}.png'.format(dataType, trainType, num, i)
-            img = cv2.imread(fileName)
-            inpList.append(makeInputData(img))
+    for i in range(trainDataNum):
+        fileName = 'images/{0}/{1}/ren{2}.jpg'.format(dataType, trainType, str(i).zfill(6))
+        img = cv2.imread(fileName)
+        inpList.append(makeInputData(img))
     return inpList
 
 # 画像から入力データを作成する
 def makeInputData(img):
     data = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    data = cv2.resize(data, None, fx=0.2, fy=0.2)
     data = data.reshape(data.shape[0] * data.shape[1]).astype('float32')
     #data = 0.8 * (data / 255.0) + 0.1
     data = data / 318.75 + 0.1
@@ -80,8 +80,6 @@ class MyChain(ChainList):
             self.value[i + 1] = F.sigmoid(self[i](self.value[i]))
         return self.value[-1]
 
-MNIST_NUM_LIST = [0, 1, 4]
-
 # set properties
 gpuFlag  = True
 dataType = 'normal'
@@ -94,9 +92,8 @@ createDir(trainTypes)
 N = 100
 inpDataList = {}
 for trainType in trainTypes:
-    dataList = createInputDataList(MNIST_NUM_LIST, dataType, trainType, N)
+    dataList = createInputDataList(dataType, trainType, N)
     inpDataList[trainType] = np.array(dataList).astype(np.float32)
-N = 3 * N
 
 # get image size
 IMG_SIZE   = len(inpDataList['train'][0])
@@ -104,7 +101,7 @@ IMG_HEIGHT = int(math.sqrt(IMG_SIZE))
 IMG_WIDTH  = IMG_HEIGHT
 
 # model definition
-model = MyChain(IMG_SIZE, 100, 30, 2, 30, 100, IMG_SIZE, bias=True)
+model = MyChain(IMG_SIZE, 100, 30, 10, 30, 100, IMG_SIZE, bias=True)
 
 if gpuFlag:
     model.to_gpu()
@@ -141,7 +138,7 @@ for epoch in range(0, times + 1):
                     img = cuda.to_cpu(makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH))
                 else:
                     img = makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH)
-                cv2.imwrite('output/{0}/{1}/mnist{2}.png'.format(trainType, epoch, i), img)
+                cv2.imwrite('output/{0}/{1}/img{2}.jpg'.format(trainType, epoch, i), img)
         print ""
         
     sum_loss = 0
