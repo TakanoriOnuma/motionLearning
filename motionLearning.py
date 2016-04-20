@@ -13,12 +13,13 @@ import os
 import cv2
 
 # ディレクトリの作成
-def createDir(trainTypes):
-    if not os.path.exists('output'):
-        os.mkdir('output')
-    for trainType in trainTypes:
-        if not os.path.exists('output/{0}'.format(trainType)):
-            os.mkdir('output/{0}'.format(trainType))
+def createDir(dirNames, trainTypes):
+    for dirName in dirNames:
+        if not os.path.exists(dirName):
+            os.mkdir(dirName)
+        for trainType in trainTypes:
+            if not os.path.exists('{0}/{1}'.format(dirName, trainType)):
+                os.mkdir('{0}/{1}'.format(dirName, trainType))
 
 # キリのいい数値か調べる
 def isRoundNumber(num):
@@ -84,9 +85,10 @@ class MyChain(ChainList):
 gpuFlag  = True
 dataType = 'normal'
 
+dirNames   = ['output', 'middle']
 trainTypes = ['train', 'test']
 
-createDir(trainTypes)
+createDir(dirNames, trainTypes)
 
 # input and output vector
 N = 100
@@ -101,7 +103,9 @@ IMG_HEIGHT = int(math.sqrt(IMG_SIZE))
 IMG_WIDTH  = IMG_HEIGHT
 
 # model definition
-model = MyChain(IMG_SIZE, 100, 30, 10, 30, 100, IMG_SIZE, bias=True)
+model = MyChain(IMG_SIZE, 1000, 300, 3, 300, 1000, IMG_SIZE, bias=True)
+MIDDLE_LAYER_NUM = len(model) / 2
+MIDDLE_NEURON_NUM = len(model[MIDDLE_LAYER_NUM].W.data[0])
 
 if gpuFlag:
     model.to_gpu()
@@ -110,7 +114,7 @@ optimizer = optimizers.MomentumSGD(5.0, 0.8)
 optimizer.setup(model)
 
 # number of learning
-times = 500
+times = 10000
 
 # main routine
 batchsize = 1
@@ -130,15 +134,24 @@ for epoch in range(0, times + 1):
             loss = F.mean_squared_error(y, t)
             print 0.5 * loss.data,
 
-            # save output image
             if not os.path.exists('output/{0}/{1}'.format(trainType, epoch)):
                 os.mkdir('output/{0}/{1}'.format(trainType, epoch))
+
+            fMiddle = open('middle/{0}/middle{1}.dat'.format(trainType, epoch), 'w')
+            fMiddle.write('# ')
+            fMiddle.write('\t'.join(['middle{0}'.format(i) for i in range(MIDDLE_NEURON_NUM)]) + '\n')
             for i in range(N):
+                # save output image
                 if gpuFlag:
                     img = cuda.to_cpu(makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH))
                 else:
                     img = makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH)
                 cv2.imwrite('output/{0}/{1}/img{2}.jpg'.format(trainType, epoch, i), img)
+
+                # save middle data
+                fMiddle.write('\t'.join([str(value) for value in model.value[MIDDLE_LAYER_NUM].data[i]]) + '\n')
+            fMiddle.close()
+                
         print ""
         
     sum_loss = 0
