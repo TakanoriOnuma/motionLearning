@@ -74,11 +74,11 @@ class MyChain(ChainList):
             initW = opt['geneFuncW'](layers[i + 1], layers[i])
             self.add_link(L.Linear(layers[i], layers[i + 1], nobias=(not opt['bias']), initialW=initW))
 
-    def __call__(self, x):
+    def __call__(self, x, train=False):
         self.value = [None] * (len(self) + 1)
         self.value[0] = x
         for i in range(len(self)):
-            self.value[i + 1] = F.sigmoid(self[i](self.value[i]))
+            self.value[i + 1] = F.sigmoid(0.5 * self[i](self.value[i]))
         return self.value[-1]
 
 # set properties
@@ -103,7 +103,7 @@ IMG_HEIGHT = int(math.sqrt(IMG_SIZE))
 IMG_WIDTH  = IMG_HEIGHT
 
 # model definition
-model = MyChain(IMG_SIZE, 1000, 300, 3, 300, 1000, IMG_SIZE, bias=True)
+model = MyChain(IMG_SIZE, 100, 30, 3, 30, 100, IMG_SIZE, bias=True)
 MIDDLE_LAYER_NUM = len(model) / 2
 MIDDLE_NEURON_NUM = len(model[MIDDLE_LAYER_NUM].W.data[0])
 
@@ -114,14 +114,17 @@ optimizer = optimizers.MomentumSGD(5.0, 0.8)
 optimizer.setup(model)
 
 # number of learning
-times = 10000
+times = 100000
 
+fError = open('error.dat', 'w')
+fError.write('# epoch\t' + '\t'.join(trainTypes) + '\n')
 # main routine
 batchsize = 1
 for epoch in range(0, times + 1):
     # write log
     if isRoundNumber(epoch):
         print "{0}:".format(epoch),
+        fError.write(str(epoch))
         for trainType in trainTypes:
             if gpuFlag:
                 x = Variable(cuda.cupy.asarray(inpDataList[trainType]))
@@ -133,6 +136,7 @@ for epoch in range(0, times + 1):
             y = model(x)
             loss = F.mean_squared_error(y, t)
             print 0.5 * loss.data,
+            fError.write('\t' + str(0.5 * loss.data))
 
             if not os.path.exists('output/{0}/{1}'.format(trainType, epoch)):
                 os.mkdir('output/{0}/{1}'.format(trainType, epoch))
@@ -153,6 +157,7 @@ for epoch in range(0, times + 1):
             fMiddle.close()
                 
         print ""
+        fError.write('\n')
         
     sum_loss = 0
     perm = np.random.permutation(N)
@@ -169,7 +174,7 @@ for epoch in range(0, times + 1):
             t = Variable(x.data)
         
         # estimation by model
-        y = model(x)
+        y = model(x, train=True)
 
         # error correction
         loss = F.mean_squared_error(y, t)
