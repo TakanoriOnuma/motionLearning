@@ -35,19 +35,29 @@ def isRoundNumber(num):
 # 入力データリストを作成する
 def createInputDataList(dataType, trainType, trainDataNum):
     inpList = []
-    for i in range(trainDataNum):
+    emphaList = []
+    for i in range(1, trainDataNum):
         fileName = 'images/{0}/{1}/ren{2}.jpg'.format(dataType, trainType, str(i).zfill(6))
+        #fileName = 'images/{0}/{1}/diff/img{2}.jpg'.format(dataType, trainType, str(i + 1))
         img = cv2.imread(fileName)
-        inpList.append(makeInputData(img))
-    return inpList
+        inpList.append(makeInputData(img, 'data'))
+
+        fileName = 'images/{0}/{1}/mask/img{2}.jpg'.format(dataType, trainType, i)
+        img = cv2.imread(fileName)
+        emphaList.append(makeInputData(img, 'empha'))
+    return inpList, emphaList
 
 # 画像から入力データを作成する
-def makeInputData(img):
+# inpType: input, empha
+def makeInputData(img, inpType):
     data = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     data = cv2.resize(data, None, fx=0.2, fy=0.2)
     data = data.reshape(data.shape[0] * data.shape[1]).astype('float32')
-    #data = 0.8 * (data / 255.0) + 0.1
-    data = data / 318.75 + 0.1
+    if inpType == 'data':
+        #data = 0.8 * (data / 255.0) + 0.1
+        data = data / 318.75 + 0.1
+    elif inpType == 'empha':
+        data = (EMPHA_VALUE - 1) * (data / 255) + 1
     return data    
 
 # 出力データから画像を作成する
@@ -78,12 +88,13 @@ class MyChain(ChainList):
         self.value = [None] * (len(self) + 1)
         self.value[0] = x
         for i in range(len(self)):
-            self.value[i + 1] = F.sigmoid(0.5 * self[i](self.value[i]))
+            self.value[i + 1] = F.sigmoid(0.1 * self[i](self.value[i]))
         return self.value[-1]
 
 # set properties
 gpuFlag  = True
 dataType = 'normal'
+EMPHA_VALUE = 20
 
 dirNames   = ['output', 'middle']
 trainTypes = ['train', 'test']
@@ -91,14 +102,17 @@ trainTypes = ['train', 'test']
 createDir(dirNames, trainTypes)
 
 # input and output vector
-N = 100
+N = 99
 inpDataList = {}
+inpDataList['data'] = {}
+inpDataList['empha'] = {}
 for trainType in trainTypes:
-    dataList = createInputDataList(dataType, trainType, N)
-    inpDataList[trainType] = np.array(dataList).astype(np.float32)
+    dataList, emphaList = createInputDataList(dataType, trainType, N)
+    inpDataList['data'][trainType] = np.array(dataList).astype(np.float32)
+    inpDataList['empha'][trainType] = np.array(emphaList).astype(np.float32)
 
 # get image size
-IMG_SIZE   = len(inpDataList['train'][0])
+IMG_SIZE   = len(inpDataList['data']['train'][0])
 IMG_HEIGHT = int(math.sqrt(IMG_SIZE))
 IMG_WIDTH  = IMG_HEIGHT
 
@@ -127,14 +141,16 @@ for epoch in range(0, times + 1):
         fError.write(str(epoch))
         for trainType in trainTypes:
             if gpuFlag:
-                x = Variable(cuda.cupy.asarray(inpDataList[trainType]))
-                t = Variable(x.data)
+                empha = cuda.cupy.asarray(inpDataList['empha'][trainType])
+                x = Variable(cuda.cupy.asarray(inpDataList['data'][trainType]))
+                t = Variable(empha * x.data)
             else:
-                x = Variable(inpDataList[trainType])
-                t = Variable(x.data)
+                empha = inpDataList['empha'][trainType]
+                x = Variable(inpDataList['data'][trainType])
+                t = Variable(empha * x.data)
 
             y = model(x)
-            loss = F.mean_squared_error(y, t)
+            loss = F.mean_squared_error(empha * y, t)
             print 0.5 * loss.data,
             fError.write('\t' + str(0.5 * loss.data))
 
@@ -144,13 +160,13 @@ for epoch in range(0, times + 1):
             fMiddle = open('middle/{0}/middle{1}.dat'.format(trainType, epoch), 'w')
             fMiddle.write('# ')
             fMiddle.write('\t'.join(['middle{0}'.format(i) for i in range(MIDDLE_NEURON_NUM)]) + '\n')
-            for i in range(N):
+            for i in range(0, N - 1):
                 # save output image
                 if gpuFlag:
                     img = cuda.to_cpu(makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH))
                 else:
                     img = makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH)
-                cv2.imwrite('output/{0}/{1}/img{2}.jpg'.format(trainType, epoch, i), img)
+                cv2.imwrite('output/{0}/{1}/img{2}.jpg'.format(trainType, epoch, i + 1), img)
 
                 # save middle data
                 fMiddle.write('\t'.join([str(value) for value in model.value[MIDDLE_LAYER_NUM].data[i]]) + '\n')
@@ -160,25 +176,26 @@ for epoch in range(0, times + 1):
         fError.write('\n')
         
     sum_loss = 0
-    perm = np.random.permutation(N)
-    for i in range(0, N, batchsize):
+    perm = np.random.permutation(N - 1)
+    for i in range(0, N - 1, batchsize):
         model.zerograds()
         optimizer.zero_grads()
 
         # extract input and output
         if gpuFlag:
-            x = Variable(cuda.cupy.asarray(inpDataList['train'][perm[i:i + batchsize]]))
-            t = Variable(x.data)
+            empha = cuda.cupy.asarray(inpDataList['empha']['train'][perm[i:i + batchsize]])
+            x = Variable(cuda.cupy.asarray(inpDataList['data']['train'][perm[i:i + batchsize]]))
+            t = Variable(empha * x.data)
         else:
-            x = Variable(inpDataList['train'][perm[i:i + batchsize]])
-            t = Variable(x.data)
+            empha = inpDataList['empha']['train'][perm[i:i + batchsize]]
+            x = Variable(inpDataList['data']['train'][perm[i:i + batchsize]])
+            t = Variable(empha * x.data)
         
         # estimation by model
         y = model(x, train=True)
 
         # error correction
-        loss = F.mean_squared_error(y, t)
-        sum_loss += loss * batchsize
+        loss = F.mean_squared_error(empha * y, t)
 
         # feedback and learning
         loss.backward()
