@@ -3,7 +3,7 @@
 import numpy as np
 import chainer.functions as F
 import chainer.links as L
-from chainer import Variable, FunctionSet, optimizers, cuda
+from chainer import Variable, FunctionSet, optimizers, cuda, serializers
 from chainer import Link, Chain, ChainList
 
 import math
@@ -68,10 +68,23 @@ def makeOutputData(out, height, width):
     img = img.astype('uint8').reshape((height, width))
     return img
 
+# 学習状況を記録する
+def writeTrainingProperty(fileName):
+    f = open(fileName, 'w')
+    f.write('NN:' + '-'.join([str(x) for x in model.layers]) + '\n')
+    f.write('BETA:' + str(model.beta) + '\n')
+    f.write('DATA_NUM:' + str(DATA_NUM) + '\n')
+    f.write('TRAIN_NUM:' + str(TRAIN_NUM) + '\n')
+    f.write('BATCH_SIZE:' + str(BATCH_SIZE) + '\n')
+    if isinstance(optimizer, optimizers.MomentumSGD):
+        f.write('LEARNING_RATE:' + str(optimizer.lr) + '\n')
+        f.write('MOMENTUM:' + str(optimizer.momentum) + '\n')
+
 class MyChain(ChainList):
     def __init__(self, *layers, **options):
         super(MyChain, self).__init__()
         opt = {
+            'beta' : 0.5,
             'bias' : False,
             'geneFuncW' : np.random.randn
         }
@@ -79,7 +92,9 @@ class MyChain(ChainList):
             if key not in opt.keys():
                 print 'undefined key: {0}'.format(key)
             opt[key] = options[key]
-            
+
+        self.beta = opt['beta']
+        self.layers = layers
         for i in range(len(layers) - 1):
             initW = opt['geneFuncW'](layers[i + 1], layers[i])
             self.add_link(L.Linear(layers[i], layers[i + 1], nobias=(not opt['bias']), initialW=initW))
@@ -88,13 +103,16 @@ class MyChain(ChainList):
         self.value = [None] * (len(self) + 1)
         self.value[0] = x
         for i in range(len(self)):
-            self.value[i + 1] = F.sigmoid(0.1 * self[i](self.value[i]))
+            self.value[i + 1] = F.sigmoid(self.beta * self[i](self.value[i]))
         return self.value[-1]
 
 # set properties
 gpuFlag  = True
 dataType = 'normal'
-EMPHA_VALUE = 20
+EMPHA_VALUE = 5
+DATA_NUM = 99
+TRAIN_NUM = 100000
+BATCH_SIZE = 1
 
 dirNames   = ['output', 'middle']
 trainTypes = ['train', 'test']
@@ -102,12 +120,11 @@ trainTypes = ['train', 'test']
 createDir(dirNames, trainTypes)
 
 # input and output vector
-N = 99
 inpDataList = {}
 inpDataList['data'] = {}
 inpDataList['empha'] = {}
 for trainType in trainTypes:
-    dataList, emphaList = createInputDataList(dataType, trainType, N)
+    dataList, emphaList = createInputDataList(dataType, trainType, DATA_NUM)
     inpDataList['data'][trainType] = np.array(dataList).astype(np.float32)
     inpDataList['empha'][trainType] = np.array(emphaList).astype(np.float32)
 
@@ -117,7 +134,7 @@ IMG_HEIGHT = int(math.sqrt(IMG_SIZE))
 IMG_WIDTH  = IMG_HEIGHT
 
 # model definition
-model = MyChain(IMG_SIZE, 100, 30, 3, 30, 100, IMG_SIZE, bias=True)
+model = MyChain(IMG_SIZE, 100, 30, 3, 30, 100, IMG_SIZE, bias=False)
 MIDDLE_LAYER_NUM = len(model) / 2
 MIDDLE_NEURON_NUM = len(model[MIDDLE_LAYER_NUM].W.data[0])
 
@@ -127,14 +144,11 @@ optimizer = optimizers.MomentumSGD(5.0, 0.8)
 #optimizer = optimizers.Adam()
 optimizer.setup(model)
 
-# number of learning
-times = 100000
-
+writeTrainingProperty('property.txt')
 fError = open('error.dat', 'w')
 fError.write('# epoch\t' + '\t'.join(trainTypes) + '\n')
 # main routine
-batchsize = 1
-for epoch in range(0, times + 1):
+for epoch in range(0, TRAIN_NUM + 1):
     # write log
     if isRoundNumber(epoch):
         print "{0}:".format(epoch),
@@ -160,7 +174,7 @@ for epoch in range(0, times + 1):
             fMiddle = open('middle/{0}/middle{1}.dat'.format(trainType, epoch), 'w')
             fMiddle.write('# ')
             fMiddle.write('\t'.join(['middle{0}'.format(i) for i in range(MIDDLE_NEURON_NUM)]) + '\n')
-            for i in range(0, N - 1):
+            for i in range(0, DATA_NUM - 1):
                 # save output image
                 if gpuFlag:
                     img = cuda.to_cpu(makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH))
@@ -175,20 +189,19 @@ for epoch in range(0, times + 1):
         print ""
         fError.write('\n')
         
-    sum_loss = 0
-    perm = np.random.permutation(N - 1)
-    for i in range(0, N - 1, batchsize):
+    perm = np.random.permutation(DATA_NUM - 1)
+    for i in range(0, DATA_NUM - 1, BATCH_SIZE):
         model.zerograds()
         optimizer.zero_grads()
 
         # extract input and output
         if gpuFlag:
-            empha = cuda.cupy.asarray(inpDataList['empha']['train'][perm[i:i + batchsize]])
-            x = Variable(cuda.cupy.asarray(inpDataList['data']['train'][perm[i:i + batchsize]]))
+            empha = cuda.cupy.asarray(inpDataList['empha']['train'][perm[i:i + BATCH_SIZE]])
+            x = Variable(cuda.cupy.asarray(inpDataList['data']['train'][perm[i:i + BATCH_SIZE]]))
             t = Variable(empha * x.data)
         else:
-            empha = inpDataList['empha']['train'][perm[i:i + batchsize]]
-            x = Variable(inpDataList['data']['train'][perm[i:i + batchsize]])
+            empha = inpDataList['empha']['train'][perm[i:i + BATCH_SIZE]]
+            x = Variable(inpDataList['data']['train'][perm[i:i + BATCH_SIZE]])
             t = Variable(empha * x.data)
         
         # estimation by model
@@ -200,7 +213,7 @@ for epoch in range(0, times + 1):
         # feedback and learning
         loss.backward()
         optimizer.update()
-    
 
-
+fError.close()
+serializers.save_npz('my.model', model)
     
