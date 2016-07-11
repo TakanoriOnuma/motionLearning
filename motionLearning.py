@@ -200,6 +200,10 @@ for epoch in range(0, TRAIN_NUM + 1):
         print ""
         fError.write('\n')
 
+        # 最後の学習まで行っていたら終了する
+        if epoch == TRAIN_NUM:
+            break
+                  
     # adjust learning rate
     if isJustLogScale(epoch):
         optimizer.lr *= LR_DECAY
