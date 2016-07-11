@@ -56,7 +56,8 @@ inpDataList = {}
 inpDataList['data'] = {}
 inpDataList['empha'] = {}
 for trainType in trainTypes:
-    dataList, emphaList = mylib.image.createInputDataList(IMG_DIR, dataType, trainType, DATA_NUM)
+    rootDir = '{}/{}/{}'.format(IMG_DIR, dataType, trainType)
+    dataList, emphaList = mylib.image.createInputDataList(rootDir, DATA_NUM, EMPHA_VALUE)
     inpDataList['data'][trainType] = np.array(dataList).astype(np.float32)
     inpDataList['empha'][trainType] = np.array(emphaList).astype(np.float32)
 

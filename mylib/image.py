@@ -4,32 +4,30 @@
 import numpy as np
 import cv2
 
-EMPHA_VALUE = 1
-
 # 入力データリストを作成する
-def createInputDataList(rootDir, dataType, trainType, trainDataNum):
+def createInputDataList(rootDir, trainDataNum, emphaValue):
     inpList = []
     emphaList = []
     for i in range(1, trainDataNum + 1):
-        fileName = '{0}/{1}/{2}/img{3}.png'.format(rootDir, dataType, trainType, i + 1)
+        fileName = '{}/img{}.png'.format(rootDir, i + 1)
         img = cv2.imread(fileName)
-        inpList.append(makeInputData(img, 'data'))
+        inpList.append(makeInputData(img, 'data', emphaValue))
 
-        fileName = '{0}/{1}/{2}/mask/img{3}.png'.format(rootDir, dataType, trainType, i)
+        fileName = '{}/mask/img{}.png'.format(rootDir, i)
         img = cv2.imread(fileName)
-        emphaList.append(makeInputData(img, 'empha'))
+        emphaList.append(makeInputData(img, 'empha', emphaValue))
     return inpList, emphaList
 
 # 画像から入力データを作成する
 # inpType: input, empha
-def makeInputData(img, inpType):
+def makeInputData(img, inpType, emphaValue):
     data = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     data = data.reshape(data.shape[0] * data.shape[1]).astype('float32')
     if inpType == 'data':
         #data = 0.8 * (data / 255.0) + 0.1
         data = data / 318.75 + 0.1
     elif inpType == 'empha':
-        data = (EMPHA_VALUE - 1) * (data / 255) + 1
+        data = (emphaValue - 1) * (data / 255) + 1
     return data    
 
 # 出力データから画像を作成する
