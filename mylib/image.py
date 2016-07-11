@@ -10,7 +10,7 @@ EMPHA_VALUE = 1
 def createInputDataList(rootDir, dataType, trainType, trainDataNum):
     inpList = []
     emphaList = []
-    for i in range(1, trainDataNum):
+    for i in range(1, trainDataNum + 1):
         fileName = '{0}/{1}/{2}/img{3}.png'.format(rootDir, dataType, trainType, i + 1)
         img = cv2.imread(fileName)
         inpList.append(makeInputData(img, 'data'))
