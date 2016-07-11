@@ -12,6 +12,8 @@ from PIL import Image
 import os
 import cv2
 
+import mylib
+
 # ディレクトリの作成
 def createDir(dirNames, trainTypes):
     for dirName in dirNames:
@@ -20,24 +22,6 @@ def createDir(dirNames, trainTypes):
         for trainType in trainTypes:
             if not os.path.exists('{0}/{1}'.format(dirName, trainType)):
                 os.mkdir('{0}/{1}'.format(dirName, trainType))
-
-# キリのいい数値か調べる
-def isRoundNumber(num):
-    if num == 0:
-        return True
-    digits = []
-    while num > 0:
-        digits.append(num % 10)
-        num /= 10
-    digits = digits[:-1]
-    return all(digit == 0 for digit in digits)
-
-# 丁度対数スケールになっているか調べる
-def isJustLogScale(num):
-    if num < 10:
-        return False
-    log = math.log10(num)
-    return (log - math.ceil(log)) == 0.0
 
 # 入力データリストを作成する
 def createInputDataList(dataType, trainType, trainDataNum):
@@ -161,7 +145,7 @@ fError.write('# epoch\t' + '\t'.join(trainTypes) + '\n')
 # main routine
 for epoch in range(0, TRAIN_NUM + 1):
     # write log
-    if isRoundNumber(epoch):
+    if mylib.util.isRoundNumber(epoch):
         print "{0}:".format(epoch),
         fError.write(str(epoch))
         for trainType in trainTypes:
@@ -205,7 +189,7 @@ for epoch in range(0, TRAIN_NUM + 1):
             break
                   
     # adjust learning rate
-    if isJustLogScale(epoch):
+    if mylib.util.isJustLogScale(epoch):
         optimizer.lr *= LR_DECAY
         print "LR_DECAY:", str(optimizer.lr)
 
