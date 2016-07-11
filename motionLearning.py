@@ -32,6 +32,13 @@ def isRoundNumber(num):
     digits = digits[:-1]
     return all(digit == 0 for digit in digits)
 
+# 丁度対数スケールになっているか調べる
+def isJustLogScale(num):
+    if num < 10:
+        return False
+    log = math.log10(num)
+    return (log - math.ceil(log)) == 0.0
+
 # 入力データリストを作成する
 def createInputDataList(dataType, trainType, trainDataNum):
     inpList = []
@@ -79,6 +86,7 @@ def writeTrainingProperty(fileName):
     if isinstance(optimizer, optimizers.MomentumSGD):
         f.write('LEARNING_RATE:' + str(optimizer.lr) + '\n')
         f.write('MOMENTUM:' + str(optimizer.momentum) + '\n')
+        f.write('LR_DECAY:' + str(LR_DECAY) + '\n')
 
 class MyChain(ChainList):
     def __init__(self, *layers, **options):
@@ -109,10 +117,12 @@ class MyChain(ChainList):
 # set properties
 gpuFlag  = True
 dataType = 'normal'
-EMPHA_VALUE = 5
-DATA_NUM = 99
+EMPHA_VALUE = 2
+DATA_NUM = 101
 TRAIN_NUM = 100000
 BATCH_SIZE = 1
+optimizer = optimizers.MomentumSGD(1.0, 0.8)
+LR_DECAY = 1.0
 
 dirNames   = ['output', 'middle']
 trainTypes = ['train', 'test']
@@ -140,7 +150,6 @@ MIDDLE_NEURON_NUM = len(model[MIDDLE_LAYER_NUM].W.data[0])
 
 if gpuFlag:
     model.to_gpu()
-optimizer = optimizers.MomentumSGD(5.0, 0.8)
 #optimizer = optimizers.Adam()
 optimizer.setup(model)
 
@@ -188,7 +197,13 @@ for epoch in range(0, TRAIN_NUM + 1):
                 
         print ""
         fError.write('\n')
-        
+
+    # adjust learning rate
+    if isJustLogScale(epoch):
+        optimizer.lr *= LR_DECAY
+        print "LR_DECAY:", str(optimizer.lr)
+
+    # learning    
     perm = np.random.permutation(DATA_NUM - 1)
     for i in range(0, DATA_NUM - 1, BATCH_SIZE):
         model.zerograds()
