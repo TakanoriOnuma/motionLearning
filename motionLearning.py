@@ -44,12 +44,12 @@ def createInputDataList(dataType, trainType, trainDataNum):
     inpList = []
     emphaList = []
     for i in range(1, trainDataNum):
-        fileName = 'images/{0}/{1}/ren{2}.jpg'.format(dataType, trainType, str(i).zfill(6))
-        #fileName = 'images/{0}/{1}/diff/img{2}.jpg'.format(dataType, trainType, str(i + 1))
+        #fileName = 'images/{0}/{1}/ren{2}.jpg'.format(dataType, trainType, str(i).zfill(6))
+        fileName = '{0}/{1}/{2}/img{3}.png'.format(IMG_DIR, dataType, trainType, i + 1)
         img = cv2.imread(fileName)
         inpList.append(makeInputData(img, 'data'))
 
-        fileName = 'images/{0}/{1}/mask/img{2}.jpg'.format(dataType, trainType, i)
+        fileName = '{0}/{1}/{2}/mask/img{3}.png'.format(IMG_DIR, dataType, trainType, i)
         img = cv2.imread(fileName)
         emphaList.append(makeInputData(img, 'empha'))
     return inpList, emphaList
@@ -58,7 +58,6 @@ def createInputDataList(dataType, trainType, trainDataNum):
 # inpType: input, empha
 def makeInputData(img, inpType):
     data = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    data = cv2.resize(data, None, fx=0.2, fy=0.2)
     data = data.reshape(data.shape[0] * data.shape[1]).astype('float32')
     if inpType == 'data':
         #data = 0.8 * (data / 255.0) + 0.1
@@ -80,6 +79,8 @@ def writeTrainingProperty(fileName):
     f = open(fileName, 'w')
     f.write('NN:' + '-'.join([str(x) for x in model.layers]) + '\n')
     f.write('BETA:' + str(model.beta) + '\n')
+    f.write('EMPHA_VALUE:' + str(EMPHA_VALUE) + '\n')
+    f.write('IMG_DIR:' + IMG_DIR + '\n')
     f.write('DATA_NUM:' + str(DATA_NUM) + '\n')
     f.write('TRAIN_NUM:' + str(TRAIN_NUM) + '\n')
     f.write('BATCH_SIZE:' + str(BATCH_SIZE) + '\n')
@@ -117,6 +118,7 @@ class MyChain(ChainList):
 # set properties
 gpuFlag  = True
 dataType = 'normal'
+IMG_DIR  = 'images3'
 EMPHA_VALUE = 2
 DATA_NUM = 101
 TRAIN_NUM = 100000
@@ -125,7 +127,7 @@ optimizer = optimizers.MomentumSGD(1.0, 0.8)
 LR_DECAY = 1.0
 
 dirNames   = ['output', 'middle']
-trainTypes = ['train', 'test']
+trainTypes = ['train', 'normal-test', 'anomaly-test']
 
 createDir(dirNames, trainTypes)
 
@@ -189,7 +191,7 @@ for epoch in range(0, TRAIN_NUM + 1):
                     img = cuda.to_cpu(makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH))
                 else:
                     img = makeOutputData(y.data[i], IMG_HEIGHT, IMG_WIDTH)
-                cv2.imwrite('output/{0}/{1}/img{2}.jpg'.format(trainType, epoch, i + 1), img)
+                cv2.imwrite('output/{0}/{1}/img{2}.png'.format(trainType, epoch, i + 1), img)
 
                 # save middle data
                 fMiddle.write('\t'.join([str(value) for value in model.value[MIDDLE_LAYER_NUM].data[i]]) + '\n')
