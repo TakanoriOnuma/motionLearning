@@ -32,3 +32,13 @@ class MyChain(ChainList):
             self.value[i + 1] = F.sigmoid(self.beta * self[i](self.value[i]))
         return self.value[-1]
 
+    def directActivate(self, startLayer, x):
+        self.value = [None] * (len(self) + 1)
+        self.value[startLayer] = x
+        for i in range(startLayer, len(self)):
+            self.value[i + 1] = F.sigmoid(self.beta * self[i](self.value[i]))
+        return self.value[-1]                                        
+
+    def getMiddleValue(self):
+        return self.value[len(self) / 2]
+

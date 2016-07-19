@@ -27,7 +27,7 @@ PROP = {
     'IMG_DIR'     : 'images3',
     'EMPHA_VALUE' : 1,
     'DATA_NUM'    : 100,
-    'TRAIN_NUM'   : 100000,
+    'TRAIN_NUM'   : 100,
     'BATCH_SIZE'  : 1
 }
 

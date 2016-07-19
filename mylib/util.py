@@ -20,3 +20,9 @@ def isJustLogScale(num):
     log = math.log10(num)
     return (log - math.ceil(log)) == 0.0
 
+# 小数のループをyieldで生成する
+def drange(begin, end, step):
+    n = begin
+    while n <= end + step / 10:
+        yield n
+        n += step
