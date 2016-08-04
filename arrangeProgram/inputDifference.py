@@ -7,7 +7,41 @@ ROOT = 'C:/Python27/motionLearning/'
 sys.path.append(ROOT)
 import mylib
 
-# ノイズ入力による特徴層の出力の差を記録する
+# 入力と特徴層との出力値の差分を記録する
+def writeDifferenceBetweenInputToFeature(dirName, model, inpDataList, trainTypes):
+    fDiffProp = open(dirName + '/diffProp.dat', 'w')
+    fDiffProp.write('# trainType\t' + 'diffPropMean\t' + 'diffPropStd' + '\n')
+    for trainType in trainTypes:
+        fDiff = open(dirName + '/diff_{}.dat'.format(trainType), 'w')
+        fDiff.write('# inpDiff\t' + 'midDiff\t' + 'diffProp' + '\n')
+
+        # 1つ前の入力値と特徴層の出力を取得する
+        prevInp = inpDataList[trainType][0]
+        model(Variable(np.array([prevInp]).astype(np.float32)))
+        prevMid = model.getMiddleValue().data[0]
+
+        diffPropList = []
+        for i in range(1, len(inpDataList[trainType])):
+            # 今の入力値と特徴層の出力を取得する
+            inp = inpDataList[trainType][i]
+            model(Variable(np.array([inp]).astype(np.float32)))
+            mid = model.getMiddleValue().data[0]
+
+            inpDiff  = np.linalg.norm(prevInp - inp)
+            midDiff  = np.linalg.norm(prevMid - mid)
+            diffProp = midDiff / inpDiff
+            fDiff.write('\t'.join([str(inpDiff), str(midDiff), str(diffProp)]) + '\n')
+            prevInp = inp
+            prevMid = mid
+            diffPropList.append(diffProp)
+        diffProps    = np.array(diffPropList)
+        diffPropMean = np.mean(diffProps)
+        diffPropStd  = np.std(diffProps)
+        fDiffProp.write('\t'.join([str(x) for x in [trainType, diffPropMean, diffPropStd]]) + '\n')
+        fDiff.close()
+    fDiffProp.close()
+
+# ノイズ入力による特徴層の出力の差の比率を記録する
 def writeDifferenceByNoiseInput(fileName, model, noiseNum, inpDataList, trainTypes):
     fDiff = open(fileName, 'w')
     fDiff.write('# trainType\t' + 'distProp_mean\t' + 'distProp_std' + '\n')
@@ -55,9 +89,14 @@ for trainType in trainTypes:
     dataList, emphaList = mylib.image.createInputDataList(rootDir, prop['DATA_NUM'], prop['EMPHA_VALUE'])
     inpDataList[trainType] = np.array(dataList).astype(np.float32)
 
+# 入力と特徴層の出力値の差分を記録する
+if not os.path.exists('diff'):
+    os.mkdir('diff')
+writeDifferenceBetweenInputToFeature('diff', model, inpDataList, trainTypes)
+
 # ノイズ入力による特徴層の出力値の差を記録する
 NOISE_NUM = 100
-writeDifferenceByNoiseInput('noiseDiff.dat', model, NOISE_NUM, inpDataList, trainTypes)
+writeDifferenceByNoiseInput('diff/noiseDiff.dat', model, NOISE_NUM, inpDataList, trainTypes)
 
 
 
