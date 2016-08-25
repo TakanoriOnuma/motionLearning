@@ -16,7 +16,8 @@ DIV = 5
 # 中間層に直接入力した出力データを入力した際に出力させる値の違いを記録する
 def saveDiffVector(fileName, model):
     fVector = open(fileName, 'w')
-            
+    fVector.write('# x\t' + 'y\t' + 'z\t' + 'dx\t' + 'dy\t' + 'dz\n')
+    
     middleNum = len(model.layers) / 2
     dim = model.layers[middleNum]
     for z in mylib.util.drange(0.0, 1.0 if dim >= 3 else 0.0, 1.0 / DIV):
