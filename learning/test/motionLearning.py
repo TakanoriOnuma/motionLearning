@@ -9,6 +9,9 @@ import random
 import os
 import cv2
 
+import sys
+ROOT = 'C:/Python27/motionLearning/'
+sys.path.append(ROOT)
 import mylib
 
 # ディレクトリの作成
@@ -24,10 +27,10 @@ def createDir(dirNames, trainTypes):
 PROP = {
     'GPU_FLAG'    : True,
     'DATA_TYPE'   : 'normal',
-    'IMG_DIR'     : 'images3',
+    'IMG_DIR'     : 'images4',
     'EMPHA_VALUE' : 1,
-    'DATA_NUM'    : 100,
-    'TRAIN_NUM'   : 100,
+    'DATA_NUM'    : 500,
+    'TRAIN_NUM'   : 100000,
     'BATCH_SIZE'  : 1
 }
 
@@ -48,7 +51,7 @@ inpDataList = {}
 inpDataList['data'] = {}
 inpDataList['empha'] = {}
 for trainType in trainTypes:
-    rootDir = '{}/{}/{}'.format(PROP['IMG_DIR'], PROP['DATA_TYPE'], trainType)
+    rootDir = '../IMAGES/{}/{}/{}'.format(PROP['IMG_DIR'], PROP['DATA_TYPE'], trainType)
     dataList, emphaList = mylib.image.createInputDataList(rootDir, PROP['DATA_NUM'], PROP['EMPHA_VALUE'])
     inpDataList['data'][trainType]  = np.array(dataList).astype(np.float32)
     inpDataList['empha'][trainType] = np.array(emphaList).astype(np.float32)
@@ -61,13 +64,13 @@ PROP['IMG_WIDTH']  = int(img.shape[1])
 
 # model definition
 model = mylib.NN.MyChain(PROP['IMG_SIZE'], 100, 30, 3, 30, 100, PROP['IMG_SIZE'], bias=False)
-PROP['NN']   = '-'.join([str(x) for x in model.layers])
-PROP['nums'] = [x for x in model.layers]
+PROP['NN']          = '-'.join([str(x) for x in model.layers])
+PROP['nums']        = [x for x in model.layers]
 PROP['midLayerNum'] = len(model) / 2
 
+# set gpu mode if GPU_FLAG is true
 if PROP['GPU_FLAG']:
     model.to_gpu()
-#optimizer = optimizers.Adam()
 optimizer.setup(model)
 
 mylib.property.writeProperty('property.txt', PROP)
@@ -80,14 +83,10 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
         print "{0}:".format(epoch),
         fError.write(str(epoch))
         for trainType in trainTypes:
-            if PROP['GPU_FLAG']:
-                empha = cuda.cupy.asarray(inpDataList['empha'][trainType])
-                x = Variable(cuda.cupy.asarray(inpDataList['data'][trainType]))
-                t = Variable(empha * x.data)
-            else:
-                empha = inpDataList['empha'][trainType]
-                x = Variable(inpDataList['data'][trainType])
-                t = Variable(empha * x.data)
+            # set input and target values
+            empha = mylib.NN.cupyArray(inpDataList['empha'][trainType], PROP['GPU_FLAG'])
+            x     = Variable(mylib.NN.cupyArray(inpDataList['data'][trainType], PROP['GPU_FLAG']))
+            t     = Variable(empha * x.data)
 
             y = model(x)
             loss = F.mean_squared_error(empha * y, t)
@@ -123,21 +122,17 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
         optimizer.lr *= PROP['LR_DECAY']
         print "LR_DECAY:", str(optimizer.lr)
 
-    # learning    
+    # learning
     perm = np.random.permutation(PROP['DATA_NUM'] - 1)
     for i in range(0, PROP['DATA_NUM'] - 1, PROP['BATCH_SIZE']):
         model.zerograds()
         optimizer.zero_grads()
 
-        # extract input and output
-        if PROP['GPU_FLAG']:
-            empha = cuda.cupy.asarray(inpDataList['empha']['train'][perm[i:i + PROP['BATCH_SIZE']]])
-            x = Variable(cuda.cupy.asarray(inpDataList['data']['train'][perm[i:i + PROP['BATCH_SIZE']]]))
-            t = Variable(empha * x.data)
-        else:
-            empha = inpDataList['empha']['train'][perm[i:i + PROP['BATCH_SIZE']]]
-            x = Variable(inpDataList['data']['train'][perm[i:i + PROP['BATCH_SIZE']]])
-            t = Variable(empha * x.data)
+        # extract input and target values
+        extraRange = perm[i:i + PROP['BATCH_SIZE']]
+        empha = mylib.NN.cupyArray(inpDataList['empha']['train'][extraRange], PROP['GPU_FLAG'])
+        x     = Variable(mylib.NN.cupyArray(inpDataList['data']['train'][extraRange], PROP['GPU_FLAG']))
+        t     = Variable(empha * x.data)
         
         # estimation by model
         y = model(x, train=True)

@@ -4,7 +4,7 @@
 import numpy as np
 import chainer.functions as F
 import chainer.links as L
-from chainer import ChainList
+from chainer import ChainList, cuda
 
 class MyChain(ChainList):
     def __init__(self, *layers, **options):
@@ -42,3 +42,5 @@ class MyChain(ChainList):
     def getMiddleValue(self):
         return self.value[len(self) / 2]
 
+def cupyArray(arr, flag):
+    return cuda.cupy.asarray(arr) if flag else arr
