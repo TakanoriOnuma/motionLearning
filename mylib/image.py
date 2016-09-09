@@ -3,13 +3,14 @@
 
 import numpy as np
 import cv2
+import os
 
 # 入力データリストを作成する
 def createInputDataList(rootDir, trainDataNum, emphaValue):
     inpList = []
     emphaList = []
     for i in range(1, trainDataNum + 1):
-        fileName = '{}/img{}.png'.format(rootDir, i + 1)
+        fileName = '{}/img{}.png'.format(rootDir, i)
         img = cv2.imread(fileName)
         inpList.append(makeInputData(img, 'data', emphaValue))
 
@@ -17,6 +18,18 @@ def createInputDataList(rootDir, trainDataNum, emphaValue):
         img = cv2.imread(fileName)
         emphaList.append(makeInputData(img, 'empha', emphaValue))
     return inpList, emphaList
+
+# 入力データリストを作成する（暫定版）
+def createInputDataList2(rootDir):
+    inpList = []
+    i = 0
+    fileName = '{}/img{}.png'.format(rootDir, i)
+    while os.path.exists(fileName):
+        img = cv2.imread(fileName)
+        inpList.append(makeInputData(img, 'data', 0))
+        i += 1
+        fileName = '{}/img{}.png'.format(rootDir, i)
+    return inpList
 
 # 画像から入力データを作成する
 # inpType: input, empha

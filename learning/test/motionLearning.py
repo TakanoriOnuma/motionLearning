@@ -22,15 +22,21 @@ def createDir(dirNames, trainTypes):
         for trainType in trainTypes:
             if not os.path.exists('{0}/{1}'.format(dirName, trainType)):
                 os.mkdir('{0}/{1}'.format(dirName, trainType))
+        if not os.path.exists('{}/{}'.format(dirName, 'test')):
+            os.mkdir('{0}/{1}'.format(dirName, 'test'))
+        for swingNum in range(PROP['SWING_NUM']):
+            if not os.path.exists('{}/{}/{}'.format(dirName, 'test', swingNum)):
+                os.mkdir('{}/{}/{}'.format(dirName, 'test', swingNum))
 
 # set properties
 PROP = {
     'GPU_FLAG'    : True,
     'DATA_TYPE'   : 'normal',
-    'IMG_DIR'     : 'images4',
+    'IMG_DIR'     : 'images5',
     'EMPHA_VALUE' : 1,
-    'DATA_NUM'    : 500,
-    'TRAIN_NUM'   : 100000,
+    'SWING_NUM'   : 100,
+    'DATA_NUM'    : 560,
+    'TRAIN_NUM'   : 10,
     'BATCH_SIZE'  : 1
 }
 
@@ -43,7 +49,7 @@ if isinstance(optimizer, optimizers.MomentumSGD):
 
 # createDirs
 dirNames   = ['output', 'middle']
-trainTypes = ['train', 'normal-test', 'anomaly-test']
+trainTypes = ['train']
 createDir(dirNames, trainTypes)
 
 # input and output vector
@@ -55,6 +61,12 @@ for trainType in trainTypes:
     dataList, emphaList = mylib.image.createInputDataList(rootDir, PROP['DATA_NUM'], PROP['EMPHA_VALUE'])
     inpDataList['data'][trainType]  = np.array(dataList).astype(np.float32)
     inpDataList['empha'][trainType] = np.array(emphaList).astype(np.float32)
+
+testDataList = []
+for i in range(PROP['SWING_NUM']):
+    rootDir = '../IMAGES/{}/{}/{}/{}'.format(PROP['IMG_DIR'], PROP['DATA_TYPE'], 'test', i)
+    dataList = mylib.image.createInputDataList2(rootDir)
+    testDataList.append(np.array(dataList).astype(np.float32))
 
 # get image size
 img = cv2.imread(rootDir + '/img{}.png'.format(0))
@@ -99,7 +111,7 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
             fMiddle = open('middle/{0}/middle{1}.dat'.format(trainType, epoch), 'w')
             fMiddle.write('# ')
             fMiddle.write('\t'.join(['middle{0}'.format(i) for i in range(PROP['nums'][PROP['midLayerNum']])]) + '\n')
-            for i in range(0, PROP['DATA_NUM'] - 1):
+            for i in range(0, PROP['DATA_NUM']):
                 # save output image
                 img = mylib.image.makeOutputData(y.data[i], PROP['IMG_HEIGHT'], PROP['IMG_WIDTH'])
                 if PROP['GPU_FLAG']:
@@ -113,6 +125,21 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
         print ""
         fError.write('\n')
 
+        # テストデータの入力
+        for swingNum in range(PROP['SWING_NUM']):
+            x = Variable(mylib.NN.cupyArray(testDataList[swingNum], PROP['GPU_FLAG']))
+            y = model(x)
+            if not os.path.exists('output/test/{}/{}'.format(swingNum, epoch)):
+                os.mkdir('output/test/{}/{}'.format(swingNum, epoch))
+
+            fMiddle = open('middle/test/{}/middle{}.dat'.format(swingNum, epoch), 'w')
+            fMiddle.write('# ')
+            fMiddle.write('\t'.join(['middle{0}'.format(i) for i in range(PROP['nums'][PROP['midLayerNum']])]) + '\n')
+            for i in range(len(testDataList[swingNum])):
+                # save middle data
+                fMiddle.write('\t'.join([str(value) for value in model.value[PROP['midLayerNum']].data[i]]) + '\n')
+            fMiddle.close()               
+
         # 最後の学習まで行っていたら終了する
         if epoch == PROP['TRAIN_NUM']:
             break
@@ -123,8 +150,8 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
         print "LR_DECAY:", str(optimizer.lr)
 
     # learning
-    perm = np.random.permutation(PROP['DATA_NUM'] - 1)
-    for i in range(0, PROP['DATA_NUM'] - 1, PROP['BATCH_SIZE']):
+    perm = np.random.permutation(PROP['DATA_NUM'])
+    for i in range(0, PROP['DATA_NUM'], PROP['BATCH_SIZE']):
         model.zerograds()
         optimizer.zero_grads()
 
