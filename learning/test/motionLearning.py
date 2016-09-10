@@ -36,7 +36,7 @@ PROP = {
     'EMPHA_VALUE' : 1,
     'SWING_NUM'   : 100,
     'DATA_NUM'    : 560,
-    'TRAIN_NUM'   : 10,
+    'TRAIN_NUM'   : 10000,
     'BATCH_SIZE'  : 1
 }
 
