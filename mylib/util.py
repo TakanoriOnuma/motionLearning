@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # coding:utf-8
 
+import os, subprocess
+
+# フォルダの作成
+def mkdir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 # キリのいい数値か調べる
 def isRoundNumber(num):
     if num == 0:
@@ -26,3 +33,10 @@ def drange(begin, end, step):
     while n <= end + step / 10:
         yield n
         n += step
+
+# gnuplotの実行
+def doGnuplot(arg, exeName):
+    p = subprocess.Popen(['gnuplot', '-e', arg, exeName], stderr=subprocess.PIPE)
+    # エラーがあったら出力する
+    for line in p.stderr:
+        print line,

@@ -1,48 +1,44 @@
 # -*- coding: utf-8 -*-
 import os
 import glob
-import subprocess
 
-# gnuplotの実行
-def doGnuplot(arg, exeName):
-    p = subprocess.Popen(['gnuplot', '-e', arg, exeName], stderr=subprocess.PIPE)
-    # エラーがあったら出力する
-    for line in p.stderr:
-        print line,
-
-# フォルダの作成
-def mkdir(path):
-    if not os.path.exists(path):
-        os.mkdir(path)
+# 自作ライブラリのパスを設定してから読み込む
+import sys
+sys.path.append('C:\Python27\motionLearning')
+import mylib
 
 ROOT = os.getcwd()
 VIEW_LIST = ['view0,0', 'view90,0', 'view90,90', 'view45,45']
 for dirName in glob.glob('part*'):
     print dirName
+    # propertyの読み込み
+    prop = mylib.property.readProperty('{}/{}/property.txt'.format(ROOT, dirName))
+    
     # 学習エラーをグラフに表示する
     print '- draw error.'
-    arg = "path='{}/{}'; limit={}".format(ROOT, dirName, 10000)
+    arg = "path='{}/{}'; limit={}".format(ROOT, dirName, prop['TRAIN_NUM'])
     exeName = 'gnuplot/error.gp'
-    doGnuplot(arg, exeName)
+    mylib.util.doGnuplot(arg, exeName)
 
     # 中間層のニューロンの出力をグラフに表示する
     print '- draw output of middle layer.'
-    mkdir('{}/{}/outNeuron'.format(ROOT, dirName))
+    mylib.util.mkdir('{}/{}/outNeuron'.format(ROOT, dirName))
     # trainディレクトリの記録
     print '  - train directory'
-    mkdir('{}/{}/outNeuron/train'.format(ROOT, dirName))
+    mylib.util.mkdir('{}/{}/outNeuron/train'.format(ROOT, dirName))
     for viewDir in VIEW_LIST:
-        mkdir('{}/{}/outNeuron/train/{}'.format(ROOT, dirName, viewDir))
-    arg = "path='{}/{}'; subDirName='train'; limit={}".format(ROOT, dirName, 10000)
+        mylib.util.mkdir('{}/{}/outNeuron/train/{}'.format(ROOT, dirName, viewDir))
+    arg = "path='{}/{}'; subDirName='train'; limit={}".format(ROOT, dirName, prop['TRAIN_NUM'])
     exeName = 'gnuplot/3DNeuron.gp'
-    doGnuplot(arg, exeName)
+    mylib.util.doGnuplot(arg, exeName)
     # testディレクトリの記録
-    mkdir('{}/{}/outNeuron/test'.format(ROOT, dirName))
-    for swingNum in range(100):
-        mkdir('{}/{}/outNeuron/test/{}'.format(ROOT, dirName, swingNum))
+    mylib.util.mkdir('{}/{}/outNeuron/test'.format(ROOT, dirName))
+    for swingNum in range(prop['SWING_NUM']):
+        mylib.util.mkdir('{}/{}/outNeuron/test/{}'.format(ROOT, dirName, swingNum))
         for viewDir in VIEW_LIST:
-            mkdir('{}/{}/outNeuron/test/{}/{}'.format(ROOT, dirName, swingNum, viewDir))
+            mylib.util.mkdir('{}/{}/outNeuron/test/{}/{}'.format(ROOT, dirName, swingNum, viewDir))
     print '  - test directory'
-    arg = "path='{}/{}'; subDirName='test'; limit={}; swingLimit={}".format(ROOT, dirName, 10000, 100)
+    arg = "path='{}/{}'; subDirName='test'; limit={}; swingLimit={}" \
+            .format(ROOT, dirName, prop['TRAIN_NUM'], prop['SWING_NUM'])
     exeName = 'gnuplot/3DNeuron_swing.gp'
-    doGnuplot(arg, exeName)
+    mylib.util.doGnuplot(arg, exeName)
