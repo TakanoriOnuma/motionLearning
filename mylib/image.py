@@ -50,3 +50,15 @@ def makeOutputData(out, height, width):
     img = np.clip(img, 0.0, 255.0)
     img = img.astype('uint8').reshape((height, width))
     return img
+
+# 4枚の画像を2x2として結合する
+# img4に何もセットしない場合は白画像をくっつける
+def concat(img1, img2, img3, img4 = None):
+    if img4 is None:
+        img4 = img3.copy()
+        img4[:] = 255
+
+    img_row1 = cv2.hconcat([img1, img2])
+    img_row2 = cv2.hconcat([img3, img4])
+    return cv2.vconcat([img_row1, img_row2])
+
