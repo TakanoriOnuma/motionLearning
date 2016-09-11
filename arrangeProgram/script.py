@@ -2,6 +2,7 @@
 import os
 import glob
 import cv2
+import shutil
 
 # 自作ライブラリのパスを設定してから読み込む
 import sys
@@ -50,6 +51,7 @@ for dirName in glob.glob('part*'):
     mylib.util.mkdir('{}/{}/outNeuron/train'.format(ROOT, dirName))
     for viewDir in VIEW_LIST:
         mylib.util.mkdir('{}/{}/outNeuron/train/{}'.format(ROOT, dirName, viewDir))
+    print '    - draw'
     arg = "path='{}/{}'; subDirName='train'; limit={}".format(ROOT, dirName, prop['TRAIN_NUM'])
     exeName = 'gnuplot/3DNeuron.gp'
     mylib.util.doGnuplot(arg, exeName)
@@ -57,12 +59,13 @@ for dirName in glob.glob('part*'):
     mylib.util.mkdir('{}/{}/outNeuron/train/concat'.format(ROOT, dirName))
     saveConcatImages('{}/{}/outNeuron/train'.format(ROOT, dirName), prop['TRAIN_NUM'], VIEW_LIST)
     # testディレクトリの記録
+    print '  - test directory'
     mylib.util.mkdir('{}/{}/outNeuron/test'.format(ROOT, dirName))
     for swingNum in range(prop['SWING_NUM']):
         mylib.util.mkdir('{}/{}/outNeuron/test/{}'.format(ROOT, dirName, swingNum))
         for viewDir in VIEW_LIST:
             mylib.util.mkdir('{}/{}/outNeuron/test/{}/{}'.format(ROOT, dirName, swingNum, viewDir))
-    print '  - test directory'
+    print '    - draw'
     arg = "path='{}/{}'; subDirName='test'; limit={}; swingLimit={}" \
             .format(ROOT, dirName, prop['TRAIN_NUM'], prop['SWING_NUM'])
     exeName = 'gnuplot/3DNeuron_swing.gp'
@@ -72,3 +75,11 @@ for dirName in glob.glob('part*'):
         rootDirName = '{}/{}/outNeuron/test/{}'.format(ROOT, dirName, swingNum)
         mylib.util.mkdir(rootDirName + '/concat')
         saveConcatImages(rootDirName, prop['TRAIN_NUM'], VIEW_LIST)
+    print '    - copy'
+    rootDirName = '{}/{}/outNeuron/test'.format(ROOT, dirName)
+    mylib.util.mkdir(rootDirName + '/swing')
+    mylib.util.mkdir('{}/swing/{}'.format(rootDirName, prop['TRAIN_NUM']))
+    for swingNum in range(prop['SWING_NUM']):
+        src = '{}/{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, prop['TRAIN_NUM'])
+        dst = '{}/swing/{}/out_neuron{}.png'.format(rootDirName, prop['TRAIN_NUM'], swingNum)
+        shutil.copy(src, dst)
