@@ -83,3 +83,7 @@ for dirName in glob.glob('part*'):
         src = '{}/{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, prop['TRAIN_NUM'])
         dst = '{}/swing/{}/out_neuron{}.png'.format(rootDirName, prop['TRAIN_NUM'], swingNum)
         shutil.copy(src, dst)
+
+    # 特徴層に直接入力した際の出力画像を記録する
+    print '- draw output of direct activation.'
+    mylib.util.doPython('directActivate.py', '{}/{}'.format(ROOT, dirName))

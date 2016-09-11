@@ -38,12 +38,14 @@ def directActivateImages(rootDir, model):
         image = cv2.vconcat(imgRows[::-1])
         cv2.imwrite(rootDir + '/merge/output(z={})_{}.png'.format(z, DIV), image)
 
+# 実行ディレクトリを設定する
+ROOT = sys.argv[1] if len(sys.argv) == 2 else '.'
+
 # モデルの読み込み
-prop  = mylib.property.readProperty('property.txt')
+prop  = mylib.property.readProperty(ROOT + '/property.txt')
 model = mylib.NN.MyChain(*prop['nums'], bias=False)
-serializers.load_npz('my.model', model)
+serializers.load_npz(ROOT + '/my.model', model)
 
 # 記録する
-if not os.path.exists('trained'):
-    os.mkdir('trained')
-directActivateImages('trained', model)
+mylib.util.mkdir(ROOT + '/trained')
+directActivateImages(ROOT + '/trained', model)

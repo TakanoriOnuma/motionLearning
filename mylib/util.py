@@ -34,9 +34,19 @@ def drange(begin, end, step):
         yield n
         n += step
 
-# gnuplotの実行
+# gnuplotを実行する
 def doGnuplot(arg, exeName):
     p = subprocess.Popen(['gnuplot', '-e', arg, exeName], stderr=subprocess.PIPE)
+    # エラーがあったら出力する
+    for line in p.stderr:
+        print line,
+
+# pythonを実行する
+def doPython(exeName, *args):
+    cmds = ['python']
+    cmds.append(exeName)
+    cmds.extend(args)
+    p = subprocess.Popen(cmds, stderr=subprocess.PIPE)
     # エラーがあったら出力する
     for line in p.stderr:
         print line,
