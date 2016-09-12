@@ -21,14 +21,8 @@ def saveConcatImage(root, n, viewList):
 # 対数スケールで保存していく
 def saveConcatImages(root, limit, viewList):
     saveConcatImage(root, 0, viewList)
-    saveConcatImage(root, 1, viewList)
-    step = 1
-    n = 1
-    while n < limit:
-        for cnt in range(9):
-            n += step
-            saveConcatImage(root, n, viewList)
-        step *= 10
+    for n in mylib.util.logrange(1, limit):
+        saveConcatImage(root, n, viewList)
 
 ROOT = os.getcwd()
 VIEW_LIST = ['view45,45', 'view0,0', 'view90,0', 'view90,90']
@@ -78,11 +72,12 @@ for dirName in glob.glob('part*'):
     print '    - copy'
     rootDirName = '{}/{}/outNeuron/test'.format(ROOT, dirName)
     mylib.util.mkdir(rootDirName + '/swing')
-    mylib.util.mkdir('{}/swing/{}'.format(rootDirName, prop['TRAIN_NUM']))
-    for swingNum in range(prop['SWING_NUM']):
-        src = '{}/{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, prop['TRAIN_NUM'])
-        dst = '{}/swing/{}/out_neuron{}.png'.format(rootDirName, prop['TRAIN_NUM'], swingNum)
-        shutil.copy(src, dst)
+    for n in mylib.util.logrange(1, prop['TRAIN_NUM']):
+        mylib.util.mkdir('{}/swing/{}'.format(rootDirName, n))
+        for swingNum in range(prop['SWING_NUM']):
+            src = '{}/{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, n)
+            dst = '{}/swing/{}/out_neuron{}.png'.format(rootDirName, n, swingNum)
+            shutil.copy(src, dst)
 
     # 特徴層に直接入力した際の出力画像を記録する
     print '- draw output of direct activation.'

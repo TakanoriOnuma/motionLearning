@@ -34,6 +34,18 @@ def drange(begin, end, step):
         yield n
         n += step
 
+# 対数スケールのジェネレータ
+# ※1, 10, 100などの10の対数スケールの値を渡すこと
+def logrange(begin, end):
+    n    = begin
+    step = begin
+    yield n
+    while n < end:
+        for cnt in range(9):
+            n += step
+            yield n
+        step *= 10
+
 # gnuplotを実行する
 def doGnuplot(arg, exeName):
     p = subprocess.Popen(['gnuplot', '-e', arg, exeName], stderr=subprocess.PIPE)
