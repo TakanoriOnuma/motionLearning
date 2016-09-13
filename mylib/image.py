@@ -4,6 +4,7 @@
 import numpy as np
 import cv2
 import os
+import subprocess
 
 # 入力データリストを作成する
 def createInputDataList(rootDir, trainDataNum, emphaValue):
@@ -62,3 +63,13 @@ def concat(img1, img2, img3, img4 = None):
     img_row2 = cv2.hconcat([img3, img4])
     return cv2.vconcat([img_row1, img_row2])
 
+
+# 複数画像を1つのgifアニメに変換する
+def makeGifAnime(images, delay, fileName):
+    cmds = ['convert', '-delay', str(delay), '-loop', str(0)]
+    cmds.extend(images)
+    cmds.append(fileName)
+    p = subprocess.Popen(cmds, stderr=subprocess.PIPE, shell=True)
+    # エラーがあったら出力する
+    for line in p.stderr:
+        print line,
