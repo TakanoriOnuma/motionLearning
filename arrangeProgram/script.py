@@ -24,6 +24,19 @@ def saveConcatImages(root, limit, viewList):
     for n in mylib.util.logrange(1, limit):
         saveConcatImage(root, n, viewList)
 
+# swingデータの統合
+def integrateSwingData(dirName, num, exceptNumList):
+    fConcatMiddle = open('{}/middle{}.dat'.format(dirName, num), 'w')
+    for i in range(len(glob.glob('{}/[0-9]*'.format(dirName)))):
+        if i in exceptNumList:
+            continue
+        fConcatMiddle.write('# {}\n'.format(i))
+        fMiddle = open('{}/{}/middle{}.dat'.format(dirName, i, num), 'r')
+        for line in fMiddle:
+            fConcatMiddle.write(line)
+        fMiddle.close()
+    fConcatMiddle.close()
+
 ROOT = os.getcwd()
 VIEW_LIST = ['view45,45', 'view0,0', 'view90,0', 'view90,90']
 for dirName in glob.glob('part*'):
@@ -36,6 +49,12 @@ for dirName in glob.glob('part*'):
     arg = "path='{}/{}'; limit={}".format(ROOT, dirName, prop['TRAIN_NUM'])
     exeName = 'gnuplot/error.gp'
     mylib.util.doGnuplot(arg, exeName)
+
+    # testデータを統合する
+    print '- integrate test swing.'
+    integrateSwingData('{}/{}/middle/test'.format(ROOT, dirName), 0, range(41, 61))
+    for num in mylib.util.logrange(1, prop['TRAIN_NUM']):
+        integrateSwingData('{}/{}/middle/test'.format(ROOT, dirName), num, range(41, 61))           
 
     # 中間層のニューロンの出力をグラフに表示する
     print '- draw output of middle layer.'
