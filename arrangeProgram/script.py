@@ -59,20 +59,21 @@ for dirName in glob.glob('part*'):
     # 中間層のニューロンの出力をグラフに表示する
     print '- draw output of middle layer.'
     mylib.util.mkdir('{}/{}/outNeuron'.format(ROOT, dirName))
-    # trainディレクトリの記録
-    print '  - train directory'
-    mylib.util.mkdir('{}/{}/outNeuron/train'.format(ROOT, dirName))
-    for viewDir in VIEW_LIST:
-        mylib.util.mkdir('{}/{}/outNeuron/train/{}'.format(ROOT, dirName, viewDir))
-    print '    - draw'
-    arg = "path='{}/{}'; subDirName='train'; limit={}".format(ROOT, dirName, prop['TRAIN_NUM'])
-    exeName = 'gnuplot/3DNeuron.gp'
-    mylib.util.doGnuplot(arg, exeName)
-    print '    - concat'
-    mylib.util.mkdir('{}/{}/outNeuron/train/concat'.format(ROOT, dirName))
-    saveConcatImages('{}/{}/outNeuron/train'.format(ROOT, dirName), prop['TRAIN_NUM'], VIEW_LIST)
-    # testディレクトリの記録
-    print '  - test directory'
+    # 各ディレクトリの記録
+    for trainType in ['train', 'test']:
+        print '  - {} directory'.format(trainType)
+        mylib.util.mkdir('{}/{}/outNeuron/{}'.format(ROOT, dirName, trainType))
+        for viewDir in VIEW_LIST:
+            mylib.util.mkdir('{}/{}/outNeuron/{}/{}'.format(ROOT, dirName, trainType, viewDir))
+        print '    - draw'
+        arg = "path='{}/{}'; subDirName='{}'; limit={}".format(ROOT, dirName, trainType, prop['TRAIN_NUM'])
+        exeName = 'gnuplot/3DNeuron.gp'
+        mylib.util.doGnuplot(arg, exeName)
+        print '    - concat'
+        mylib.util.mkdir('{}/{}/outNeuron/{}/concat'.format(ROOT, dirName, trainType))
+        saveConcatImages('{}/{}/outNeuron/{}'.format(ROOT, dirName, trainType), prop['TRAIN_NUM'], VIEW_LIST)
+    # 各swingの記録
+    print '  - each swing'
     mylib.util.mkdir('{}/{}/outNeuron/test'.format(ROOT, dirName))
     for swingNum in range(prop['SWING_NUM']):
         mylib.util.mkdir('{}/{}/outNeuron/test/{}'.format(ROOT, dirName, swingNum))
