@@ -22,11 +22,11 @@ def createDir(dirNames, trainTypes):
         for trainType in trainTypes:
             if not os.path.exists('{0}/{1}'.format(dirName, trainType)):
                 os.mkdir('{0}/{1}'.format(dirName, trainType))
-        if not os.path.exists('{}/{}'.format(dirName, 'test')):
-            os.mkdir('{0}/{1}'.format(dirName, 'test'))
+        if not os.path.exists('{}/{}'.format(dirName, 'swing')):
+            os.mkdir('{0}/{1}'.format(dirName, 'swing'))
         for swingNum in range(PROP['SWING_NUM']):
-            if not os.path.exists('{}/{}/{}'.format(dirName, 'test', swingNum)):
-                os.mkdir('{}/{}/{}'.format(dirName, 'test', swingNum))
+            if not os.path.exists('{}/{}/swing{}'.format(dirName, 'swing', swingNum)):
+                os.mkdir('{}/{}/swing{}'.format(dirName, 'swing', swingNum))
 
 # set properties
 PROP = {
@@ -36,7 +36,7 @@ PROP = {
     'EMPHA_VALUE' : 1,
     'SWING_NUM'   : 100,
     'DATA_NUM'    : 560,
-    'TRAIN_NUM'   : 10000,
+    'TRAIN_NUM'   : 100,
     'BATCH_SIZE'  : 1
 }
 
@@ -62,11 +62,11 @@ for trainType in trainTypes:
     inpDataList['data'][trainType]  = np.array(dataList).astype(np.float32)
     inpDataList['empha'][trainType] = np.array(emphaList).astype(np.float32)
 
-testDataList = []
+swingDataList = []
 for i in range(PROP['SWING_NUM']):
-    rootDir = '../IMAGES/{}/{}/{}/{}'.format(PROP['IMG_DIR'], PROP['DATA_TYPE'], 'test', i)
-    dataList = mylib.image.createInputDataList2(rootDir)
-    testDataList.append(np.array(dataList).astype(np.float32))
+    rootDir = '../IMAGES/{}/{}/{}/{}'.format(PROP['IMG_DIR'], PROP['DATA_TYPE'], 'swing', i)
+    dataList = mylib.image.createInputSwingDataList(rootDir)
+    swingDataList.append(np.array(dataList).astype(np.float32))
 
 # get image size
 img = cv2.imread(rootDir + '/img{}.png'.format(0))
@@ -127,15 +127,15 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
 
         # テストデータの入力
         for swingNum in range(PROP['SWING_NUM']):
-            x = Variable(mylib.NN.cupyArray(testDataList[swingNum], PROP['GPU_FLAG']))
+            x = Variable(mylib.NN.cupyArray(swingDataList[swingNum], PROP['GPU_FLAG']))
             y = model(x)
-            if not os.path.exists('output/test/{}/{}'.format(swingNum, epoch)):
-                os.mkdir('output/test/{}/{}'.format(swingNum, epoch))
+            if not os.path.exists('output/swing/swing{}/{}'.format(swingNum, epoch)):
+                os.mkdir('output/swing/swing{}/{}'.format(swingNum, epoch))
 
-            fMiddle = open('middle/test/{}/middle{}.dat'.format(swingNum, epoch), 'w')
+            fMiddle = open('middle/swing/swing{}/middle{}.dat'.format(swingNum, epoch), 'w')
             fMiddle.write('# ')
             fMiddle.write('\t'.join(['middle{0}'.format(i) for i in range(PROP['nums'][PROP['midLayerNum']])]) + '\n')
-            for i in range(len(testDataList[swingNum])):
+            for i in range(len(swingDataList[swingNum])):
                 # save middle data
                 fMiddle.write('\t'.join([str(value) for value in model.value[PROP['midLayerNum']].data[i]]) + '\n')
             fMiddle.close()               
