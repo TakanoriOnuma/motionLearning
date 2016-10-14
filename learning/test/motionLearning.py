@@ -14,20 +14,6 @@ ROOT = 'C:/Python27/motionLearning/'
 sys.path.append(ROOT)
 import mylib
 
-# ディレクトリの作成
-def createDir(dirNames, trainTypes):
-    for dirName in dirNames:
-        if not os.path.exists(dirName):
-            os.mkdir(dirName)
-        for trainType in trainTypes:
-            if not os.path.exists('{0}/{1}'.format(dirName, trainType)):
-                os.mkdir('{0}/{1}'.format(dirName, trainType))
-        if not os.path.exists('{}/{}'.format(dirName, 'swing')):
-            os.mkdir('{0}/{1}'.format(dirName, 'swing'))
-        for swingNum in range(PROP['SWING_NUM']):
-            if not os.path.exists('{}/{}/swing{}'.format(dirName, 'swing', swingNum)):
-                os.mkdir('{}/{}/swing{}'.format(dirName, 'swing', swingNum))
-
 # set properties
 PROP = {
     'GPU_FLAG'    : True,
@@ -47,10 +33,16 @@ if isinstance(optimizer, optimizers.MomentumSGD):
     PROP['MOMENTUM']      = optimizer.momentum
     PROP['LR_DECAY']      = 1.0
 
-# createDirs
+# create Directories
 dirNames   = ['output', 'middle']
 trainTypes = ['train']
-createDir(dirNames, trainTypes)
+for dirName in dirNames:
+    mylib.util.mkdir(dirName)
+    for trainType in trainTypes:
+        mylib.util.mkdir('{}/{}'.format(dirName, trainType))
+    mylib.util.mkdir('{}/{}'.format(dirName, 'swing'))
+    for swingNum in range(PROP['SWING_NUM']):
+        mylib.util.mkdir('{}/{}/swing{}'.format(dirName, 'swing', swingNum))
 
 # input and output vector
 inpDataList = {}
@@ -105,8 +97,7 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
             print 0.5 * loss.data,
             fError.write('\t' + str(0.5 * loss.data))
 
-            if not os.path.exists('output/{0}/{1}'.format(trainType, epoch)):
-                os.mkdir('output/{0}/{1}'.format(trainType, epoch))
+            mylib.util.mkdir('output/{}/{}'.format(trainType, epoch))
 
             fMiddle = open('middle/{0}/middle{1}.dat'.format(trainType, epoch), 'w')
             fMiddle.write('# ')
@@ -129,8 +120,6 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
         for swingNum in range(PROP['SWING_NUM']):
             x = Variable(mylib.NN.cupyArray(swingDataList[swingNum], PROP['GPU_FLAG']))
             y = model(x)
-            if not os.path.exists('output/swing/swing{}/{}'.format(swingNum, epoch)):
-                os.mkdir('output/swing/swing{}/{}'.format(swingNum, epoch))
 
             fMiddle = open('middle/swing/swing{}/middle{}.dat'.format(swingNum, epoch), 'w')
             fMiddle.write('# ')
