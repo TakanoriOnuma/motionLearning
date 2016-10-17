@@ -25,13 +25,13 @@ def saveConcatImages(root, limit, viewList):
         saveConcatImage(root, n, viewList)
 
 # swingデータの統合
-def integrateSwingData(dirName, num, exceptNumList):
-    fConcatMiddle = open('{}/middle{}.dat'.format(dirName, num), 'w')
-    for i in range(len(glob.glob('{}/[0-9]*'.format(dirName)))):
+def integrateSwingData(srcDirName, destDirName, num, exceptNumList):
+    fConcatMiddle = open('{}/middle{}.dat'.format(destDirName, num), 'w')
+    for i in range(len(glob.glob('{}/swing[0-9]*'.format(srcDirName)))):
         if i in exceptNumList:
             continue
         fConcatMiddle.write('# {}\n'.format(i))
-        fMiddle = open('{}/{}/middle{}.dat'.format(dirName, i, num), 'r')
+        fMiddle = open('{}/swing{}/middle{}.dat'.format(srcDirName, i, num), 'r')
         for line in fMiddle:
             fConcatMiddle.write(line)
         fMiddle.close()
@@ -52,9 +52,12 @@ for dirName in glob.glob('part*'):
 
     # testデータを統合する
     print '- integrate test swing.'
-    integrateSwingData('{}/{}/middle/test'.format(ROOT, dirName), 0, range(41, 61))
+    srcDirName  = '{}/{}/middle/{}'.format(ROOT, dirName, 'swing')
+    destDirName = '{}/{}/middle/{}'.format(ROOT, dirName, 'test')
+    mylib.util.mkdir(destDirName)
+    integrateSwingData(srcDirName, destDirName, 0, range(41, 61))
     for num in mylib.util.logrange(1, prop['TRAIN_NUM']):
-        integrateSwingData('{}/{}/middle/test'.format(ROOT, dirName), num, range(41, 61))           
+        integrateSwingData(srcDirName, destDirName, num, range(41, 61))           
 
     # 中間層のニューロンの出力をグラフに表示する
     print '- draw output of middle layer.'
@@ -74,29 +77,29 @@ for dirName in glob.glob('part*'):
         saveConcatImages('{}/{}/outNeuron/{}'.format(ROOT, dirName, trainType), prop['TRAIN_NUM'], VIEW_LIST)
     # 各swingの記録
     print '  - each swing'
-    mylib.util.mkdir('{}/{}/outNeuron/test'.format(ROOT, dirName))
+    mylib.util.mkdir('{}/{}/outNeuron/swing'.format(ROOT, dirName))
     for swingNum in range(prop['SWING_NUM']):
-        mylib.util.mkdir('{}/{}/outNeuron/test/{}'.format(ROOT, dirName, swingNum))
+        mylib.util.mkdir('{}/{}/outNeuron/swing/swing{}'.format(ROOT, dirName, swingNum))
         for viewDir in VIEW_LIST:
-            mylib.util.mkdir('{}/{}/outNeuron/test/{}/{}'.format(ROOT, dirName, swingNum, viewDir))
+            mylib.util.mkdir('{}/{}/outNeuron/swing/swing{}/{}'.format(ROOT, dirName, swingNum, viewDir))
     print '    - draw'
-    arg = "path='{}/{}'; subDirName='test'; limit={}; swingLimit={}" \
+    arg = "path='{}/{}'; subDirName='swing'; limit={}; swingLimit={}" \
             .format(ROOT, dirName, prop['TRAIN_NUM'], prop['SWING_NUM'])
     exeName = 'gnuplot/3DNeuron_swing.gp'
     mylib.util.doGnuplot(arg, exeName)
     print '    - concat'
     for swingNum in range(prop['SWING_NUM']):
-        rootDirName = '{}/{}/outNeuron/test/{}'.format(ROOT, dirName, swingNum)
+        rootDirName = '{}/{}/outNeuron/swing/swing{}'.format(ROOT, dirName, swingNum)
         mylib.util.mkdir(rootDirName + '/concat')
         saveConcatImages(rootDirName, prop['TRAIN_NUM'], VIEW_LIST)
     print '    - copy'
-    rootDirName = '{}/{}/outNeuron/test'.format(ROOT, dirName)
-    mylib.util.mkdir(rootDirName + '/swing')
+    rootDirName = '{}/{}/outNeuron/swing'.format(ROOT, dirName)
+    mylib.util.mkdir(rootDirName + '/swing_all')
     for n in mylib.util.logrange(1, prop['TRAIN_NUM']):
-        mylib.util.mkdir('{}/swing/{}'.format(rootDirName, n))
+        mylib.util.mkdir('{}/swing_all/{}'.format(rootDirName, n))
         for swingNum in range(prop['SWING_NUM']):
-            src = '{}/{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, n)
-            dst = '{}/swing/{}/out_neuron{}.png'.format(rootDirName, n, swingNum)
+            src = '{}/swing{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, n)
+            dst = '{}/swing_all/{}/out_neuron{}.png'.format(rootDirName, n, swingNum)
             shutil.copy(src, dst)
 
     # 特徴層に直接入力した際の出力画像を記録する
