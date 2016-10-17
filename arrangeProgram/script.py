@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import json
 import glob
 import cv2
 import shutil
@@ -42,7 +43,7 @@ VIEW_LIST = ['view45,45', 'view0,0', 'view90,0', 'view90,90']
 for dirName in glob.glob('part*'):
     print dirName
     # propertyの読み込み
-    prop = mylib.property.readProperty('{}/{}/property.txt'.format(ROOT, dirName))
+    prop = json.load(open('{}/{}/property.json'.format(ROOT, dirName), 'r'))
     
     # 学習エラーをグラフに表示する
     print '- draw error.'
@@ -55,9 +56,9 @@ for dirName in glob.glob('part*'):
     srcDirName  = '{}/{}/middle/{}'.format(ROOT, dirName, 'swing')
     destDirName = '{}/{}/middle/{}'.format(ROOT, dirName, 'test')
     mylib.util.mkdir(destDirName)
-    integrateSwingData(srcDirName, destDirName, 0, range(41, 61))
+    integrateSwingData(srcDirName, destDirName, 0, prop['TRAIN_SWING'])
     for num in mylib.util.logrange(1, prop['TRAIN_NUM']):
-        integrateSwingData(srcDirName, destDirName, num, range(41, 61))           
+        integrateSwingData(srcDirName, destDirName, num, prop['TRAIN_SWING'])    
 
     # 中間層のニューロンの出力をグラフに表示する
     print '- draw output of middle layer.'

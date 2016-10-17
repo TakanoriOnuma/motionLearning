@@ -4,6 +4,7 @@ import numpy as np
 import chainer.functions as F
 from chainer import Variable, optimizers, cuda, serializers
 
+import json
 import math
 import random
 import os
@@ -21,8 +22,9 @@ PROP = {
     'IMG_DIR'     : 'images5',
     'EMPHA_VALUE' : 1,
     'SWING_NUM'   : 100,
+    'TRAIN_SWING' : range(41, 61),
     'DATA_NUM'    : 560,
-    'TRAIN_NUM'   : 100,
+    'TRAIN_NUM'   : 10000,
     'BATCH_SIZE'  : 1
 }
 
@@ -77,10 +79,14 @@ if PROP['GPU_FLAG']:
     model.to_gpu()
 optimizer.setup(model)
 
-mylib.property.writeProperty('property.txt', PROP)
+# save property
+fProperty = open('property.json', 'w')
+json.dump(PROP, fProperty, indent=2)
+fProperty.close()
+
+# main routine
 fError = open('error.dat', 'w')
 fError.write('# epoch\t' + '\t'.join(trainTypes) + '\n')
-# main routine
 for epoch in range(0, PROP['TRAIN_NUM'] + 1):
     # write log
     if mylib.util.isRoundNumber(epoch):
