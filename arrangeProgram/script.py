@@ -38,13 +38,54 @@ def integrateSwingData(srcDirName, destDirName, num, exceptNumList):
         fMiddle.close()
     fConcatMiddle.close()
 
+# 点情報を取得する
+def getPoints(fileName, separator='\t'):
+    fPoints = open(fileName, 'r')
+    points = []
+    for line in fPoints:
+        if line[0] == '#':
+            continue
+        pts = line.split(separator)
+        for i in range(len(pts) - 1):
+            pts[i] = float(pts[i])
+        pts[-1] = float(pts[-1][:-1])
+        points.append(pts)
+    return points
+
+# 点情報をnumPointで規格化
+def normalizePoints(points, numPoint):
+    step = float(len(points) - 1) / (numPoint - 1)
+    normPoints = []
+    for i in range(numPoint):
+        pt      = i * step
+        intPt   = int(pt)
+        floatPt = pt - intPt
+        # 小数点がない場合は整数の点をそのまま取ってくる
+        if floatPt <= 0.1e-10:
+            pts = points[intPt]
+        # 小数もある場合は内分点の計算をする
+        else:
+            pts = []
+            for j in range(len(points[intPt])):
+                pts.append((1 - floatPt) * points[intPt][j] + floatPt * points[intPt + 1][j])
+        normPoints.append(pts)
+    return normPoints
+
+# 点情報を保存する
+def savePoints(fileName, points, separator='\t'):
+    fPoints = open(fileName, 'w')
+    fPoints.write('# ' + separator.join(['middle{}'.format(i) for i in range(len(points[0]))]) + '\n')
+    for i in range(len(points)):
+        fPoints.write(separator.join([str(pt) for pt in points[i]]) + '\n')
+    fPoints.close()
+
 ROOT = os.getcwd()
 VIEW_LIST = ['view45,45', 'view0,0', 'view90,0', 'view90,90']
 for dirName in glob.glob('part*'):
     print dirName
     # propertyの読み込み
     prop = json.load(open('{}/{}/property.json'.format(ROOT, dirName), 'r'))
-    
+    """    
     # 学習エラーをグラフに表示する
     print '- draw error.'
     arg = "path='{}/{}'; limit={}".format(ROOT, dirName, prop['TRAIN_NUM'])
@@ -106,3 +147,15 @@ for dirName in glob.glob('part*'):
     # 特徴層に直接入力した際の出力画像を記録する
     print '- draw output of direct activation.'
     mylib.util.doPython('directActivate.py', '{}/{}'.format(ROOT, dirName))
+    """
+
+    # 1スイングの点数を30点で統一する
+    for swingNum in range(prop['SWING_NUM']):
+        rootDirName = '{}/{}/middle/swing/swing{}'.format(ROOT, dirName, swingNum)
+        for i in mylib.util.logrange(0, prop['TRAIN_NUM']):
+            fileName = '{}/middle{}.dat'.format(rootDirName, i)
+            points = getPoints(fileName)
+            normPoints = normalizePoints(points, 30)
+            mylib.util.mkdir('{}/normalize'.format(rootDirName))
+            fileName = '{}/normalize/middle{}.dat'.format(rootDirName, i)
+            savePoints(fileName, normPoints)
