@@ -36,7 +36,11 @@ def drange(begin, end, step):
 
 # 対数スケールのジェネレータ
 # ※1, 10, 100などの10の対数スケールの値を渡すこと
+# ※beginが0の時は例外的に0を出したあと1から対数スケールで進める
 def logrange(begin, end):
+    if begin == 0:
+        yield 0
+        begin = 1
     n    = begin
     step = begin
     yield n

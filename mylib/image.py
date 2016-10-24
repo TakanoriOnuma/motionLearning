@@ -20,8 +20,8 @@ def createInputDataList(rootDir, trainDataNum, emphaValue):
         emphaList.append(makeInputData(img, 'empha', emphaValue))
     return inpList, emphaList
 
-# 入力データリストを作成する（暫定版）
-def createInputDataList2(rootDir):
+# 1スイング分の入力データリストを作成する
+def createInputSwingDataList(rootDir):
     inpList = []
     i = 0
     fileName = '{}/img{}.png'.format(rootDir, i)

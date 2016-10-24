@@ -4,6 +4,7 @@ import numpy as np
 import chainer.functions as F
 from chainer import Variable, optimizers, cuda, serializers
 
+import json
 import math
 import random
 import os
@@ -14,20 +15,6 @@ ROOT = 'C:/Python27/motionLearning/'
 sys.path.append(ROOT)
 import mylib
 
-# ディレクトリの作成
-def createDir(dirNames, trainTypes):
-    for dirName in dirNames:
-        if not os.path.exists(dirName):
-            os.mkdir(dirName)
-        for trainType in trainTypes:
-            if not os.path.exists('{0}/{1}'.format(dirName, trainType)):
-                os.mkdir('{0}/{1}'.format(dirName, trainType))
-        if not os.path.exists('{}/{}'.format(dirName, 'test')):
-            os.mkdir('{0}/{1}'.format(dirName, 'test'))
-        for swingNum in range(PROP['SWING_NUM']):
-            if not os.path.exists('{}/{}/{}'.format(dirName, 'test', swingNum)):
-                os.mkdir('{}/{}/{}'.format(dirName, 'test', swingNum))
-
 # set properties
 PROP = {
     'GPU_FLAG'    : True,
@@ -35,6 +22,7 @@ PROP = {
     'IMG_DIR'     : 'images5',
     'EMPHA_VALUE' : 1,
     'SWING_NUM'   : 100,
+    'TRAIN_SWING' : range(41, 61),
     'DATA_NUM'    : 560,
     'TRAIN_NUM'   : 10000,
     'BATCH_SIZE'  : 1
@@ -47,10 +35,16 @@ if isinstance(optimizer, optimizers.MomentumSGD):
     PROP['MOMENTUM']      = optimizer.momentum
     PROP['LR_DECAY']      = 1.0
 
-# createDirs
+# create Directories
 dirNames   = ['output', 'middle']
 trainTypes = ['train']
-createDir(dirNames, trainTypes)
+for dirName in dirNames:
+    mylib.util.mkdir(dirName)
+    for trainType in trainTypes:
+        mylib.util.mkdir('{}/{}'.format(dirName, trainType))
+    mylib.util.mkdir('{}/{}'.format(dirName, 'swing'))
+    for swingNum in range(PROP['SWING_NUM']):
+        mylib.util.mkdir('{}/{}/swing{}'.format(dirName, 'swing', swingNum))
 
 # input and output vector
 inpDataList = {}
@@ -62,11 +56,11 @@ for trainType in trainTypes:
     inpDataList['data'][trainType]  = np.array(dataList).astype(np.float32)
     inpDataList['empha'][trainType] = np.array(emphaList).astype(np.float32)
 
-testDataList = []
+swingDataList = []
 for i in range(PROP['SWING_NUM']):
-    rootDir = '../IMAGES/{}/{}/{}/{}'.format(PROP['IMG_DIR'], PROP['DATA_TYPE'], 'test', i)
-    dataList = mylib.image.createInputDataList2(rootDir)
-    testDataList.append(np.array(dataList).astype(np.float32))
+    rootDir = '../IMAGES/{}/{}/{}/{}'.format(PROP['IMG_DIR'], PROP['DATA_TYPE'], 'swing', i)
+    dataList = mylib.image.createInputSwingDataList(rootDir)
+    swingDataList.append(np.array(dataList).astype(np.float32))
 
 # get image size
 img = cv2.imread(rootDir + '/img{}.png'.format(0))
@@ -85,10 +79,14 @@ if PROP['GPU_FLAG']:
     model.to_gpu()
 optimizer.setup(model)
 
-mylib.property.writeProperty('property.txt', PROP)
+# save property
+fProperty = open('property.json', 'w')
+json.dump(PROP, fProperty, indent=2)
+fProperty.close()
+
+# main routine
 fError = open('error.dat', 'w')
 fError.write('# epoch\t' + '\t'.join(trainTypes) + '\n')
-# main routine
 for epoch in range(0, PROP['TRAIN_NUM'] + 1):
     # write log
     if mylib.util.isRoundNumber(epoch):
@@ -105,8 +103,7 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
             print 0.5 * loss.data,
             fError.write('\t' + str(0.5 * loss.data))
 
-            if not os.path.exists('output/{0}/{1}'.format(trainType, epoch)):
-                os.mkdir('output/{0}/{1}'.format(trainType, epoch))
+            mylib.util.mkdir('output/{}/{}'.format(trainType, epoch))
 
             fMiddle = open('middle/{0}/middle{1}.dat'.format(trainType, epoch), 'w')
             fMiddle.write('# ')
@@ -127,15 +124,13 @@ for epoch in range(0, PROP['TRAIN_NUM'] + 1):
 
         # テストデータの入力
         for swingNum in range(PROP['SWING_NUM']):
-            x = Variable(mylib.NN.cupyArray(testDataList[swingNum], PROP['GPU_FLAG']))
+            x = Variable(mylib.NN.cupyArray(swingDataList[swingNum], PROP['GPU_FLAG']))
             y = model(x)
-            if not os.path.exists('output/test/{}/{}'.format(swingNum, epoch)):
-                os.mkdir('output/test/{}/{}'.format(swingNum, epoch))
 
-            fMiddle = open('middle/test/{}/middle{}.dat'.format(swingNum, epoch), 'w')
+            fMiddle = open('middle/swing/swing{}/middle{}.dat'.format(swingNum, epoch), 'w')
             fMiddle.write('# ')
             fMiddle.write('\t'.join(['middle{0}'.format(i) for i in range(PROP['nums'][PROP['midLayerNum']])]) + '\n')
-            for i in range(len(testDataList[swingNum])):
+            for i in range(len(swingDataList[swingNum])):
                 # save middle data
                 fMiddle.write('\t'.join([str(value) for value in model.value[PROP['midLayerNum']].data[i]]) + '\n')
             fMiddle.close()               
