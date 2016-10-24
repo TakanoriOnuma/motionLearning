@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
+import numpy
 import json
 import glob
 import cv2
 import shutil
+
+from sklearn.cluster import KMeans
 
 # 自作ライブラリのパスを設定してから読み込む
 import sys
@@ -149,7 +152,11 @@ for dirName in glob.glob('part*'):
     mylib.util.doPython('directActivate.py', '{}/{}'.format(ROOT, dirName))
     """
 
+    # クラスタリングする
+    print '- clustering.'
+    mylib.util.mkdir('{}/{}/clustering'.format(ROOT, dirName))
     # 1スイングの点数を30点で統一する
+    print '  - normalize swing points.'
     for swingNum in range(prop['SWING_NUM']):
         rootDirName = '{}/{}/middle/swing/swing{}'.format(ROOT, dirName, swingNum)
         for i in mylib.util.logrange(0, prop['TRAIN_NUM']):
@@ -159,3 +166,30 @@ for dirName in glob.glob('part*'):
             mylib.util.mkdir('{}/normalize'.format(rootDirName))
             fileName = '{}/normalize/middle{}.dat'.format(rootDirName, i)
             savePoints(fileName, normPoints)
+    # 各スイングを1次元情報に変換する
+    swings = []
+    for swingNum in range(prop['SWING_NUM']):
+        rootDirName = '{}/{}/middle/swing/swing{}'.format(ROOT, dirName, swingNum)
+        fileName = '{}/normalize/middle{}.dat'.format(rootDirName, prop['TRAIN_NUM'])
+        points = numpy.array(getPoints(fileName))
+        swings.append(numpy.reshape(points, points.shape[0] * points.shape[1]))
+    swings = numpy.array(swings)
+    # k-Mean法を使ってクラスタリングする
+    print '  - kmeans.'
+    CLUSTER_NUM = 3
+    labels = KMeans(n_clusters=CLUSTER_NUM).fit_predict(swings)
+    # 結果を基に分類する
+    print '  - distribute by the result.'
+    rootDirName = '{}/{}/clustering'.format(ROOT, dirName)
+    for i in range(CLUSTER_NUM):
+        createDirName = '{}/{}'.format(rootDirName, i)
+        # 実行の度に結果が変わるためフォルダごと消して初期化する
+        if os.path.exists(createDirName):
+            shutil.rmtree(createDirName)
+        mylib.util.mkdir(createDirName)
+    swingDirName = '{}/{}/outNeuron/swing/swing_all/{}'.format(ROOT, dirName, prop['TRAIN_NUM'])
+    for swingNum in range(prop['SWING_NUM']):
+        src = '{}/out_neuron{}.png'.format(swingDirName, swingNum)
+        dst = '{}/{}/out_neuron{}.png'.format(rootDirName, labels[swingNum], swingNum)
+        shutil.copy(src, dst)
+    
