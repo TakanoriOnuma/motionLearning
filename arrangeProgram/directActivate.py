@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys, os, cv2
 import numpy as np
+import json
 from chainer import Variable, serializers
 
 sys.path.append('C:\Python27\motionLearning')
@@ -42,7 +43,7 @@ def directActivateImages(rootDir, model):
 ROOT = sys.argv[1] if len(sys.argv) == 2 else '.'
 
 # モデルの読み込み
-prop  = mylib.property.readProperty(ROOT + '/property.txt')
+prop  = json.load(open(ROOT + '/property.json', 'r'))
 model = mylib.NN.MyChain(*prop['nums'], bias=False)
 serializers.load_npz(ROOT + '/my.model', model)
 

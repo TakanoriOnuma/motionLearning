@@ -64,32 +64,37 @@ class Reporter:
         for trainType in ['train', 'test']:
             print '  - {} directory'.format(trainType)
             mylib.util.mkdir('{}/outNeuron/{}'.format(self.dirName, trainType))
-            for viewDir in VIEW_LIST:
-                mylib.util.mkdir('{}/outNeuron/{}/{}'.format(self.dirName, trainType, viewDir))
+            if self.prop['featureNum'] == 3:
+                for viewDir in VIEW_LIST:
+                    mylib.util.mkdir('{}/outNeuron/{}/{}'.format(self.dirName, trainType, viewDir))
             print '    - draw'
             arg = "path='{}'; subDirName='{}'; limit={}".format(self.dirName, trainType, self.prop['TRAIN_NUM'])
-            exeName = self.gpDirName + '/3DNeuron.gp'
+            exeName = self.gpDirName + '/{}DNeuron.gp'.format(self.prop['featureNum'])
             mylib.util.doGnuplot(arg, exeName)
-            print '    - concat'
-            mylib.util.mkdir('{}/outNeuron/{}/concat'.format(self.dirName, trainType))
-            self.__saveConcatImages('{}/outNeuron/{}'.format(self.dirName, trainType), self.prop['TRAIN_NUM'])
+
+            if self.prop['featureNum'] == 3:
+                print '    - concat'
+                mylib.util.mkdir('{}/outNeuron/{}/concat'.format(self.dirName, trainType))
+                self.__saveConcatImages('{}/outNeuron/{}'.format(self.dirName, trainType), self.prop['TRAIN_NUM'])
         # 各swingの記録
         print '  - each swing'
         mylib.util.mkdir('{}/outNeuron/swing'.format(self.dirName))
         for swingNum in range(self.prop['SWING_NUM']):
             mylib.util.mkdir('{}/outNeuron/swing/swing{}'.format(self.dirName, swingNum))
-            for viewDir in VIEW_LIST:
-                mylib.util.mkdir('{}/outNeuron/swing/swing{}/{}'.format(self.dirName, swingNum, viewDir))
+            if self.prop['featureNum'] == 3:
+                for viewDir in VIEW_LIST:
+                    mylib.util.mkdir('{}/outNeuron/swing/swing{}/{}'.format(self.dirName, swingNum, viewDir))
         print '    - draw'
         arg = "path='{}'; subDirName='swing'; limit={}; swingLimit={}" \
                 .format(self.dirName, self.prop['TRAIN_NUM'], self.prop['SWING_NUM'])
-        exeName = self.gpDirName + '/3DNeuron_swing.gp'
+        exeName = self.gpDirName + '/{}DNeuron_swing.gp'.format(self.prop['featureNum'])
         mylib.util.doGnuplot(arg, exeName)
-        print '    - concat'
-        for swingNum in range(self.prop['SWING_NUM']):
-            rootDirName = '{}/outNeuron/swing/swing{}'.format(self.dirName, swingNum)
-            mylib.util.mkdir(rootDirName + '/concat')
-            self.__saveConcatImages(rootDirName, self.prop['TRAIN_NUM'])
+        if self.prop['featureNum'] == 3:
+            print '    - concat'
+            for swingNum in range(self.prop['SWING_NUM']):
+                rootDirName = '{}/outNeuron/swing/swing{}'.format(self.dirName, swingNum)
+                mylib.util.mkdir(rootDirName + '/concat')
+                self.__saveConcatImages(rootDirName, self.prop['TRAIN_NUM'])
         # 学習回数ごとのフォルダを作成する
         print '    - copy'
         rootDirName = '{}/outNeuron/swing'.format(self.dirName)
@@ -97,7 +102,10 @@ class Reporter:
         for n in mylib.util.logrange(0, self.prop['TRAIN_NUM']):
             mylib.util.mkdir('{}/swing_all/{}'.format(rootDirName, n))
             for swingNum in range(self.prop['SWING_NUM']):
-                src = '{}/swing{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, n)
+                if self.prop['featureNum'] == 2:
+                    src = '{}/swing{}/out_neuron{}.png'.format(rootDirName, swingNum, n)
+                else:
+                    src = '{}/swing{}/concat/out_neuron{}.png'.format(rootDirName, swingNum, n)
                 dst = '{}/swing_all/{}/out_neuron{}.png'.format(rootDirName, n, swingNum)
                 shutil.copy(src, dst)
 

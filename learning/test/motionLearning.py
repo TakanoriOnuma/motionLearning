@@ -69,10 +69,11 @@ PROP['IMG_HEIGHT'] = int(img.shape[0])
 PROP['IMG_WIDTH']  = int(img.shape[1])
 
 # model definition
-model = mylib.NN.MyChain(PROP['IMG_SIZE'], 100, 30, 3, 30, 100, PROP['IMG_SIZE'], bias=False)
+model = mylib.NN.MyChain(PROP['IMG_SIZE'], 100, 30, 2, 30, 100, PROP['IMG_SIZE'], bias=False)
 PROP['NN']          = '-'.join([str(x) for x in model.layers])
 PROP['nums']        = [x for x in model.layers]
 PROP['midLayerNum'] = len(model) / 2
+PROP['featureNum']  = PROP['nums'][PROP['midLayerNum']]
 
 # set gpu mode if GPU_FLAG is true
 if PROP['GPU_FLAG']:
