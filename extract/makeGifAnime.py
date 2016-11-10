@@ -11,23 +11,32 @@ dataTypes = ['normal']
 
 # gifアニメを作成する
 for dataType in dataTypes:
-    for dirName in glob.glob('{}/{}/test/[0-9]*'.format(ROOT, dataType)):
+    maxNum = 0
+    for dirName in glob.glob('{}/{}/swing/[0-9]*'.format(ROOT, dataType)):
+        num = len(glob.glob('{}/img*.png'.format(dirName)))
+        maxNum = num if num > maxNum else maxNum
+    print maxNum
+    for dirName in glob.glob('{}/{}/swing/[0-9]*'.format(ROOT, dataType)):
         print dirName
-        imgFiles = glob.glob('{}/img*.png'.format(dirName))
-        numberingFiles = ['{}/img{}.png'.format(dirName, i) for i in range(len(imgFiles))]
+        num = len(glob.glob('{}/img*.png'.format(dirName)))
+        numberingFiles = ['{}/img{}.png'.format(dirName, i) for i in range(num)]
         mylib.image.makeGifAnime(numberingFiles, 3, '{}/ani.gif'.format(dirName))
+        # 回数を合わせるため後ろの画像を追加する
+        for i in range(maxNum - num):
+            numberingFiles.append('{}/img{}.png'.format(dirName, num - 1))
+        mylib.image.makeGifAnime(numberingFiles, 3, '{}/ani2.gif'.format(dirName))
 
 # gifアニメをまとめてみるHTMLを作成
 for dataType in dataTypes:
-    dirName = '{}/{}/test'.format(ROOT, dataType)
+    dirName = '{}/{}/swing'.format(ROOT, dataType)
     fHtml = open('{}/anigif.html'.format(dirName), 'w')
     fHtml.write('<table border="1">\n')
     i = 0
-    while os.path.exists('{}/{}/ani.gif'.format(dirName, i)):
+    while os.path.exists('{}/{}/ani2.gif'.format(dirName, i)):
         if i % 10 == 0:
             fHtml.write('  <tr align="center">\n')
             fHtml.write('    ')
-        fHtml.write('<td><img src="{0}/ani.gif"><br>{0}</td>'.format(i))
+        fHtml.write('<td><img src="{0}/ani2.gif"><br>{0}</td>'.format(i))
             
         if i % 10 == 9:
             fHtml.write('\n')

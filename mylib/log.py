@@ -148,7 +148,6 @@ class Reporter:
         swings = numpy.array(swings)
         # k-Mean法を使ってクラスタリングする
         print '  - kmeans.'
-        CLUSTER_NUM = 2
         labels = KMeans(n_clusters=clusterNum).fit_predict(swings)
         # 結果を基に分類する
         print '  - distribute by the result.'
