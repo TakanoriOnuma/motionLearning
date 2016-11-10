@@ -14,9 +14,8 @@ for dirName in glob.glob('part*'):
     reporter.setReportDirName(ROOT + '/' + dirName)
 
     # 記録
-    reporter.drawError()
-    reporter.integrateTestSwing()
-    reporter.drawOutputInMiddleLayer()
-    reporter.saveOutputOfDirectActivation()
+    #reporter.drawError()
+    #reporter.integrateTestSwing()
+    #reporter.drawOutputInMiddleLayer()
+    #reporter.saveOutputOfDirectActivation()
     reporter.saveClustering(10)
-

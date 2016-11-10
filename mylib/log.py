@@ -164,6 +164,31 @@ class Reporter:
             src = '{}/out_neuron{}.png'.format(swingDirName, swingNum)
             dst = '{}/{}/out_neuron{}.png'.format(rootDirName, labels[swingNum], swingNum)
             shutil.copy(src, dst)
+        # gifアニメもコピーしてくる
+        IMG_DIR = 'C:\Python27\motionLearning\learning\IMAGES'
+        imgDir  = '{}/{}/{}'.format(IMG_DIR, self.prop['IMG_DIR'], self.prop['DATA_TYPE'])
+        for swingNum in range(self.prop['SWING_NUM']):
+            src = '{}/swing/{}/ani2.gif'.format(imgDir, swingNum)
+            dst = '{}/clustering/{}/ani{}.gif'.format(self.dirName, labels[swingNum], swingNum)
+            shutil.copy(src, dst)
+        # クラスに分類する
+        clusters = [[] for i in range(clusterNum)]
+        for swingNum in range(self.prop['SWING_NUM']):
+            clusters[labels[swingNum]].append(swingNum)
+        # HTMLページを作成する
+        fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
+        fHtml.write('<table border="1">\n')
+        for classNum in range(clusterNum):
+            fHtml.write('  <tr align="center">\n')
+            fHtml.write('    ')
+            fHtml.write('<td>{}</td>'.format(classNum))
+            for swingNum in clusters[classNum]:
+                fHtml.write('<td><img src="{0}/ani{1}.gif"><br>{1}</td>'.format(classNum, swingNum))
+            fHtml.write('\n')
+            fHtml.write('  </tr>\n')
+        fHtml.write('</table>')
+        fHtml.close()
+        
 
     # 点情報を取得する
     def __getPoints(self, fileName, separator='\t'):
