@@ -125,9 +125,8 @@ class Reporter:
         mylib.util.doPython(self.pyDirName + '/directActivate.py', self.dirName)
 
     # クラスタリングの結果を保存する
-    def saveClustering(self):
+    def saveClustering(self, clusterNum):
         print '- clustering.'
-        mylib.util.mkdir('{}/clustering'.format(self.dirName))
         # 1スイングの点数を30点で統一する
         print '  - normalize swing points.'
         for swingNum in range(self.prop['SWING_NUM']):
@@ -149,16 +148,17 @@ class Reporter:
         swings = numpy.array(swings)
         # k-Mean法を使ってクラスタリングする
         print '  - kmeans.'
-        CLUSTER_NUM = 3
-        labels = KMeans(n_clusters=CLUSTER_NUM).fit_predict(swings)
+        CLUSTER_NUM = 2
+        labels = KMeans(n_clusters=clusterNum).fit_predict(swings)
         # 結果を基に分類する
         print '  - distribute by the result.'
         rootDirName = '{}/clustering'.format(self.dirName)
-        for i in range(CLUSTER_NUM):
+        # 実行の度に結果が変わるためフォルダごと消して初期化する
+        if os.path.exists(rootDirName):
+            shutil.rmtree(rootDirName)
+        mylib.util.mkdir(rootDirName)
+        for i in range(clusterNum):
             createDirName = '{}/{}'.format(rootDirName, i)
-            # 実行の度に結果が変わるためフォルダごと消して初期化する
-            if os.path.exists(createDirName):
-                shutil.rmtree(createDirName)
             mylib.util.mkdir(createDirName)
         swingDirName = '{}/outNeuron/swing/swing_all/{}'.format(self.dirName, self.prop['TRAIN_NUM'])
         for swingNum in range(self.prop['SWING_NUM']):
