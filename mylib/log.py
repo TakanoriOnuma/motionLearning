@@ -188,7 +188,28 @@ class Reporter:
             fHtml.write('  </tr>\n')
         fHtml.write('</table>')
         fHtml.close()
-        
+        # error量を取得する
+        fErrors = open('{}/output/swing/error_prop.dat'.format(self.dirName), 'r')
+        errors = []
+        for line in fErrors:
+            if line[0] == '#':
+                continue
+            swingNum, error = line[:-1].split('\t')
+            errors.append(error)
+        # 恒等写像で得られた画像を使ったHTMLページを作成する
+        fHtml = open('{}/clustering/clustering2.html'.format(self.dirName), 'w')
+        fHtml.write('<table border="1">\n')
+        for classNum in range(clusterNum):
+            fHtml.write('  <tr align="center">\n')
+            fHtml.write('    ')
+            fHtml.write('<td>{}</td>'.format(classNum))
+            for swingNum in clusters[classNum]:
+                fHtml.write('<td><img src="../output/swing/swing{0}/ani2.gif"><br>{0}<br>{1}</td>'.format(swingNum, errors[swingNum]))
+            fHtml.write('\n')
+            fHtml.write('  </tr>\n')
+        fHtml.write('</table>')
+        fHtml.close()
+    
 
     # 点情報を取得する
     def __getPoints(self, fileName, separator='\t'):
