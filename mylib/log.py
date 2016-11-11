@@ -229,4 +229,9 @@ class Reporter:
         fPoints.write('# ' + separator.join(['middle{}'.format(i) for i in range(len(points[0]))]) + '\n')
         for i in range(len(points)):
             fPoints.write(separator.join([str(pt) for pt in points[i]]) + '\n')
-        fPoints.close() 
+        fPoints.close()
+
+    # 恒等写像した出力画像を保存する
+    def saveIdentityMapping(self):
+        print '- save identity mapping.'
+        mylib.util.doPython(self.pyDirName + '/saveIdentityMapping.py', self.dirName)
