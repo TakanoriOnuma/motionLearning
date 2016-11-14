@@ -256,3 +256,5 @@ class Reporter:
     def saveIdentityMapping(self):
         print '- save identity mapping.'
         mylib.util.doPython(self.pyDirName + '/saveIdentityMapping.py', self.dirName)
+        print '  - make animation.'
+        mylib.util.doPython(self.pyDirName + '/makeGifAnime.py', self.dirName);

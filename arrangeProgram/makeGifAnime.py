@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 import glob
-import json
 
 import sys
 ROOT = 'C:/Python27/motionLearning/'
@@ -9,7 +8,6 @@ sys.path.append(ROOT)
 import mylib
 
 DIR_NAME = sys.argv[1] if len(sys.argv) == 2 else 'part2'
-prop = json.load(open(DIR_NAME + '/property.json', 'r'))
 
 # gifアニメを作成する
 maxNum = 0
@@ -18,7 +16,6 @@ for dirName in glob.glob('{}/output/swing/swing[0-9]*'.format(DIR_NAME)):
     maxNum = num if num > maxNum else maxNum
 print maxNum
 for dirName in glob.glob('{}/output/swing/swing[0-9]*'.format(DIR_NAME)):
-    print dirName
     num = len(glob.glob('{}/img*.png'.format(dirName)))
     numberingFiles = ['{}/img{}.png'.format(dirName, i) for i in range(num)]
     mylib.image.makeGifAnime(numberingFiles, 3, '{}/ani.gif'.format(dirName))

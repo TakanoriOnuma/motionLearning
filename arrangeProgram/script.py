@@ -18,5 +18,6 @@ for dirName in glob.glob('part*'):
     #reporter.integrateTestSwing()
     #reporter.drawOutputInMiddleLayer()
     #reporter.saveOutputOfDirectActivation()
+    reporter.saveIdentityMapping()
     reporter.saveClustering(10)
-    #reporter.saveIdentityMapping()
+    
