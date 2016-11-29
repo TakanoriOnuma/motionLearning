@@ -124,20 +124,62 @@ class Reporter:
         print '- draw output of direct activation.'
         mylib.util.doPython(self.pyDirName + '/directActivate.py', self.dirName)
 
-    # クラスタリングの結果を保存する
-    def saveClustering(self, clusterNum):
-        print '- clustering.'
-        # 1スイングの点数を30点で統一する
-        print '  - normalize swing points.'
+    # 1スイングの点数を統一する
+    def normalizeSwingPoints(self, pointNum):
+        print '- normalize swing points.'
         for swingNum in range(self.prop['SWING_NUM']):
             rootDirName = '{}/middle/swing/swing{}'.format(self.dirName, swingNum)
             for i in mylib.util.logrange(0, self.prop['TRAIN_NUM']):
                 fileName = '{}/middle{}.dat'.format(rootDirName, i)
                 points = self.__getPoints(fileName)
-                normPoints = self.__normalizePoints(points, 30)
+                normPoints = self.__normalizePoints(points, pointNum)
                 mylib.util.mkdir('{}/normalize'.format(rootDirName))
                 fileName = '{}/normalize/middle{}.dat'.format(rootDirName, i)
-                self.__savePoints(fileName, normPoints)
+                self.__savePoints(fileName, normPoints)        
+
+    # 点情報を取得する
+    def __getPoints(self, fileName, separator='\t'):
+        fPoints = open(fileName, 'r')
+        points = []
+        for line in fPoints:
+            if line[0] == '#':
+                continue
+            pts = line[:-1].split(separator)
+            for i in range(len(pts)):
+                pts[i] = float(pts[i])
+            points.append(pts)
+        return points
+
+    # 点情報をnumPointで規格化
+    def __normalizePoints(self, points, numPoint):
+        step = float(len(points) - 1) / (numPoint - 1)
+        normPoints = []
+        for i in range(numPoint):
+            pt      = i * step
+            intPt   = int(pt)
+            floatPt = pt - intPt
+            # 小数点がない場合は整数の点をそのまま取ってくる
+            if floatPt <= 0.1e-10:
+                pts = points[intPt]
+            # 小数もある場合は内分点の計算をする
+            else:
+                pts = []
+                for j in range(len(points[intPt])):
+                    pts.append((1 - floatPt) * points[intPt][j] + floatPt * points[intPt + 1][j])
+            normPoints.append(pts)
+        return normPoints
+
+    # 点情報を保存する
+    def __savePoints(self, fileName, points, separator='\t'):
+        fPoints = open(fileName, 'w')
+        fPoints.write('# ' + separator.join(['middle{}'.format(i) for i in range(len(points[0]))]) + '\n')
+        for i in range(len(points)):
+            fPoints.write(separator.join([str(pt) for pt in points[i]]) + '\n')
+        fPoints.close()
+
+    # クラスタリングの結果を保存する
+    def saveClustering(self, clusterNum):
+        print '- clustering.'
         # 各スイングを1次元情報に変換する
         swings = []
         for swingNum in range(self.prop['SWING_NUM']):
@@ -149,6 +191,10 @@ class Reporter:
         # k-Mean法を使ってクラスタリングする
         print '  - kmeans.'
         labels = KMeans(n_clusters=clusterNum).fit_predict(swings)
+        # 各クラスにswing番号を配布する
+        clusters = [[] for i in range(clusterNum)]
+        for swingNum in range(self.prop['SWING_NUM']):
+            clusters[labels[swingNum]].append(swingNum)
         # 結果を基に分類する
         print '  - distribute by the result.'
         rootDirName = '{}/clustering'.format(self.dirName)
@@ -159,22 +205,20 @@ class Reporter:
         for i in range(clusterNum):
             createDirName = '{}/{}'.format(rootDirName, i)
             mylib.util.mkdir(createDirName)
+        # グラフとgifアニメのフォルダ先を指定する
         swingDirName = '{}/outNeuron/swing/swing_all/{}'.format(self.dirName, self.prop['TRAIN_NUM'])
-        for swingNum in range(self.prop['SWING_NUM']):
-            src = '{}/out_neuron{}.png'.format(swingDirName, swingNum)
-            dst = '{}/{}/out_neuron{}.png'.format(rootDirName, labels[swingNum], swingNum)
-            shutil.copy(src, dst)
-        # gifアニメもコピーしてくる
         IMG_DIR = 'C:\Python27\motionLearning\learning\IMAGES'
         imgDir  = '{}/{}/{}'.format(IMG_DIR, self.prop['IMG_DIR'], self.prop['DATA_TYPE'])
-        for swingNum in range(self.prop['SWING_NUM']):
-            src = '{}/swing/{}/ani2.gif'.format(imgDir, swingNum)
-            dst = '{}/clustering/{}/ani{}.gif'.format(self.dirName, labels[swingNum], swingNum)
-            shutil.copy(src, dst)
-        # クラスに分類する
-        clusters = [[] for i in range(clusterNum)]
-        for swingNum in range(self.prop['SWING_NUM']):
-            clusters[labels[swingNum]].append(swingNum)
+        for classNum in range(clusterNum):
+            for swingNum in clusters[classNum]:
+                # グラフのコピー
+                src = '{}/out_neuron{}.png'.format(swingDirName, swingNum)
+                dst = '{}/clustering/{}/out_neuron{}.png'.format(self.dirName, classNum, swingNum)
+                shutil.copy(src, dst)
+                # gifアニメのコピー
+                src = '{}/swing/{}/ani2.gif'.format(imgDir, swingNum)
+                dst = '{}/clustering/{}/ani{}.gif'.format(self.dirName, labels[swingNum], swingNum)
+                shutil.copy(src, dst)       
         # HTMLページを作成する
         fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
         fHtml.write('<table border="1">\n')
@@ -209,48 +253,6 @@ class Reporter:
             fHtml.write('  </tr>\n')
         fHtml.write('</table>')
         fHtml.close()
-    
-
-    # 点情報を取得する
-    def __getPoints(self, fileName, separator='\t'):
-        fPoints = open(fileName, 'r')
-        points = []
-        for line in fPoints:
-            if line[0] == '#':
-                continue
-            pts = line.split(separator)
-            for i in range(len(pts) - 1):
-                pts[i] = float(pts[i])
-            pts[-1] = float(pts[-1][:-1])
-            points.append(pts)
-        return points
-
-    # 点情報をnumPointで規格化
-    def __normalizePoints(self, points, numPoint):
-        step = float(len(points) - 1) / (numPoint - 1)
-        normPoints = []
-        for i in range(numPoint):
-            pt      = i * step
-            intPt   = int(pt)
-            floatPt = pt - intPt
-            # 小数点がない場合は整数の点をそのまま取ってくる
-            if floatPt <= 0.1e-10:
-                pts = points[intPt]
-            # 小数もある場合は内分点の計算をする
-            else:
-                pts = []
-                for j in range(len(points[intPt])):
-                    pts.append((1 - floatPt) * points[intPt][j] + floatPt * points[intPt + 1][j])
-            normPoints.append(pts)
-        return normPoints
-
-    # 点情報を保存する
-    def __savePoints(self, fileName, points, separator='\t'):
-        fPoints = open(fileName, 'w')
-        fPoints.write('# ' + separator.join(['middle{}'.format(i) for i in range(len(points[0]))]) + '\n')
-        for i in range(len(points)):
-            fPoints.write(separator.join([str(pt) for pt in points[i]]) + '\n')
-        fPoints.close()
 
     # 恒等写像した出力画像を保存する
     def saveIdentityMapping(self):
