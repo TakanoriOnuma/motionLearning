@@ -186,6 +186,9 @@ class Reporter:
             rootDirName = '{}/middle/swing/swing{}'.format(self.dirName, swingNum)
             fileName = '{}/normalize/middle{}.dat'.format(rootDirName, self.prop['TRAIN_NUM'])
             points = numpy.array(self.__getPoints(fileName))
+            # 点の数と次数を記録しておく
+            pointNum = points.shape[0]
+            dim = points.shape[1]
             swings.append(numpy.reshape(points, points.shape[0] * points.shape[1]))
         swings = numpy.array(swings)
         # k-Mean法を使ってクラスタリングする
@@ -218,7 +221,13 @@ class Reporter:
                 # gifアニメのコピー
                 src = '{}/swing/{}/ani2.gif'.format(imgDir, swingNum)
                 dst = '{}/clustering/{}/ani{}.gif'.format(self.dirName, labels[swingNum], swingNum)
-                shutil.copy(src, dst)       
+                shutil.copy(src, dst)
+        # 各クラスの重心を求める
+        for classNum in range(clusterNum):
+            classSwings = numpy.array(swings[clusters[classNum]])
+            meanSwing = classSwings.mean(axis=0).reshape((pointNum, dim))
+            fileName = '{}/clustering/{}/mean.dat'.format(self.dirName, classNum)
+            self.__savePoints(fileName, meanSwing)
         # HTMLページを作成する
         fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
         fHtml.write('<table border="1">\n')
