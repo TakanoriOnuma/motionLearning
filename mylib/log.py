@@ -267,6 +267,20 @@ class Reporter:
             fHtml.write('  </tr>\n')
         fHtml.write('</table>')
         fHtml.close()
+        # グラフの結果をHTMLページにまとめる
+        fHtml = open('{}/clustering/clustering_graph.html'.format(self.dirName), 'w')
+        fHtml.write('<table border="1">\n')
+        for classNum in range(clusterNum):
+            fHtml.write('  <tr align="center">\n')
+            fHtml.write('    ')
+            fHtml.write('<td>{}<br>({})</td>'.format(classNum, len(clusters[classNum])))
+            fHtml.write('<td><img src="{}/mean.png" width="300" height="200"></td>'.format(classNum))
+            for swingNum in clusters[classNum]:
+                fHtml.write('<td><img src="{0}/out_neuron{1}.png" width="300" height="200"></td>'.format(classNum, swingNum))
+            fHtml.write('\n')
+            fHtml.write('  </tr>\n')
+        fHtml.write('</table>')
+        fHtml.close()        
 
     # 恒等写像した出力画像を保存する
     def saveIdentityMapping(self):
