@@ -228,6 +228,11 @@ class Reporter:
             meanSwing = classSwings.mean(axis=0).reshape((pointNum, dim))
             fileName = '{}/clustering/{}/mean.dat'.format(self.dirName, classNum)
             self.__savePoints(fileName, meanSwing)
+            # グラフにする
+            arg = "path='{}/clustering/{}'; fileName='{}'; titleName='out_neuron{}_swing/mean{}'" \
+                .format(self.dirName, classNum, 'mean', self.prop['TRAIN_NUM'], classNum)
+            exeName = self.gpDirName + '/{}DNeuron_oneSwing.gp'.format(self.prop['featureNum'])
+            mylib.util.doGnuplot(arg, exeName) 
         # HTMLページを作成する
         fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
         fHtml.write('<table border="1">\n')
