@@ -182,17 +182,8 @@ class Reporter:
                 src = '{}/swing/{}/ani2.gif'.format(imgDir, swingNum)
                 dst = '{}/clustering/{}/ani{}.gif'.format(self.dirName, labels[swingNum], swingNum)
                 shutil.copy(src, dst)
-        # 各クラスの重心を求める
-        for classNum in range(clusterNum):
-            classSwings = numpy.array(swings[clusters[classNum]])
-            meanSwing = classSwings.mean(axis=0).reshape((pointNum, dim))
-            fileName = '{}/clustering/{}/mean.dat'.format(self.dirName, classNum)
-            mylib.point.savePoints(fileName, meanSwing)
-            # グラフにする
-            arg = "path='{}/clustering/{}'; fileName='{}'; titleName='out_neuron{}_swing/mean{}'" \
-                .format(self.dirName, classNum, 'mean', self.prop['TRAIN_NUM'], classNum)
-            exeName = self.gpDirName + '/{}DNeuron_oneSwing.gp'.format(self.prop['featureNum'])
-            mylib.util.doGnuplot(arg, exeName)
+        # 各クラスの重心を記録する
+        self.__saveMeanSwings(clusters, swings, (pointNum, dim))
         # 重心情報からアニメーションを作成する
         mylib.util.doPython(self.pyDirName + '/directInput.py', self.dirName, str(clusterNum))
         # HTMLページを作成する
@@ -243,7 +234,22 @@ class Reporter:
             fHtml.write('\n')
             fHtml.write('  </tr>\n')
         fHtml.write('</table>')
-        fHtml.close()        
+        fHtml.close()
+
+    # 各クラスの重心を記録する
+    def __saveMeanSwings(self, clusters, swings, size):
+        for classNum in range(len(clusters)):
+            # クラスに属するスイング集合を取得
+            classSwings = numpy.array(swings[clusters[classNum]])
+            # スイング集合の平均を取る
+            meanSwing = classSwings.mean(axis=0).reshape(size)
+            fileName = '{}/clustering/{}/mean.dat'.format(self.dirName, classNum)
+            mylib.point.savePoints(fileName, meanSwing)
+            # グラフにする
+            arg = "path='{}/clustering/{}'; fileName='{}'; titleName='out_neuron{}_swing/mean{}'" \
+                .format(self.dirName, classNum, 'mean', self.prop['TRAIN_NUM'], classNum)
+            exeName = self.gpDirName + '/{}DNeuron_oneSwing.gp'.format(self.prop['featureNum'])
+            mylib.util.doGnuplot(arg, exeName)
 
     # 恒等写像した出力画像を保存する
     def saveIdentityMapping(self):
