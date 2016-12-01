@@ -131,51 +131,11 @@ class Reporter:
             rootDirName = '{}/middle/swing/swing{}'.format(self.dirName, swingNum)
             for i in mylib.util.logrange(0, self.prop['TRAIN_NUM']):
                 fileName = '{}/middle{}.dat'.format(rootDirName, i)
-                points = self.__getPoints(fileName)
-                normPoints = self.__normalizePoints(points, pointNum)
+                points = mylib.point.getPoints(fileName)
+                normPoints = mylib.point.normalizePoints(points, pointNum)
                 mylib.util.mkdir('{}/normalize'.format(rootDirName))
                 fileName = '{}/normalize/middle{}.dat'.format(rootDirName, i)
-                self.__savePoints(fileName, normPoints)        
-
-    # 点情報を取得する
-    def __getPoints(self, fileName, separator='\t'):
-        fPoints = open(fileName, 'r')
-        points = []
-        for line in fPoints:
-            if line[0] == '#':
-                continue
-            pts = line[:-1].split(separator)
-            for i in range(len(pts)):
-                pts[i] = float(pts[i])
-            points.append(pts)
-        return points
-
-    # 点情報をnumPointで規格化
-    def __normalizePoints(self, points, numPoint):
-        step = float(len(points) - 1) / (numPoint - 1)
-        normPoints = []
-        for i in range(numPoint):
-            pt      = i * step
-            intPt   = int(pt)
-            floatPt = pt - intPt
-            # 小数点がない場合は整数の点をそのまま取ってくる
-            if floatPt <= 0.1e-10:
-                pts = points[intPt]
-            # 小数もある場合は内分点の計算をする
-            else:
-                pts = []
-                for j in range(len(points[intPt])):
-                    pts.append((1 - floatPt) * points[intPt][j] + floatPt * points[intPt + 1][j])
-            normPoints.append(pts)
-        return normPoints
-
-    # 点情報を保存する
-    def __savePoints(self, fileName, points, separator='\t'):
-        fPoints = open(fileName, 'w')
-        fPoints.write('# ' + separator.join(['middle{}'.format(i) for i in range(len(points[0]))]) + '\n')
-        for i in range(len(points)):
-            fPoints.write(separator.join([str(pt) for pt in points[i]]) + '\n')
-        fPoints.close()
+                mylib.point.savePoints(fileName, normPoints)
 
     # クラスタリングの結果を保存する
     def saveClustering(self, clusterNum):
@@ -185,7 +145,7 @@ class Reporter:
         for swingNum in range(self.prop['SWING_NUM']):
             rootDirName = '{}/middle/swing/swing{}'.format(self.dirName, swingNum)
             fileName = '{}/normalize/middle{}.dat'.format(rootDirName, self.prop['TRAIN_NUM'])
-            points = numpy.array(self.__getPoints(fileName))
+            points = numpy.array(mylib.point.getPoints(fileName))
             # 点の数と次数を記録しておく
             pointNum = points.shape[0]
             dim = points.shape[1]
@@ -227,7 +187,7 @@ class Reporter:
             classSwings = numpy.array(swings[clusters[classNum]])
             meanSwing = classSwings.mean(axis=0).reshape((pointNum, dim))
             fileName = '{}/clustering/{}/mean.dat'.format(self.dirName, classNum)
-            self.__savePoints(fileName, meanSwing)
+            mylib.point.savePoints(fileName, meanSwing)
             # グラフにする
             arg = "path='{}/clustering/{}'; fileName='{}'; titleName='out_neuron{}_swing/mean{}'" \
                 .format(self.dirName, classNum, 'mean', self.prop['TRAIN_NUM'], classNum)
