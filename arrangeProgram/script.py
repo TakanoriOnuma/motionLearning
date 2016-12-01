@@ -20,5 +20,5 @@ for dirName in glob.glob('part*'):
     #reporter.saveOutputOfDirectActivation()
     #reporter.saveIdentityMapping()
     #reporter.normalizeSwingPoints(30)
-    reporter.saveClustering(10)
+    reporter.saveClustering(3)
     

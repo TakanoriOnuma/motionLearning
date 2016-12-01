@@ -9,7 +9,7 @@ import mylib
 
 # 実行ディレクトリを設定する
 ROOT = sys.argv[1] if len(sys.argv) == 3 else 'part4'
-clusterNum = sys.argv[2] if len(sys.argv) == 3 else 10
+clusterNum = int(sys.argv[2]) if len(sys.argv) == 3 else 10
 
 # モデルの読み込み
 prop  = json.load(open(ROOT + '/property.json', 'r'))

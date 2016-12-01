@@ -232,7 +232,9 @@ class Reporter:
             arg = "path='{}/clustering/{}'; fileName='{}'; titleName='out_neuron{}_swing/mean{}'" \
                 .format(self.dirName, classNum, 'mean', self.prop['TRAIN_NUM'], classNum)
             exeName = self.gpDirName + '/{}DNeuron_oneSwing.gp'.format(self.prop['featureNum'])
-            mylib.util.doGnuplot(arg, exeName) 
+            mylib.util.doGnuplot(arg, exeName)
+        # 重心情報からアニメーションを作成する
+        mylib.util.doPython(self.pyDirName + '/directInput.py', self.dirName, str(clusterNum))
         # HTMLページを作成する
         fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
         fHtml.write('<table border="1">\n')
@@ -261,6 +263,7 @@ class Reporter:
             fHtml.write('  <tr align="center">\n')
             fHtml.write('    ')
             fHtml.write('<td>{}</td>'.format(classNum))
+            fHtml.write('<td><img src="{}/clustering/{}/mean/ani.gif"><br><br><br></td>'.format(self.dirName, classNum))
             for swingNum in clusters[classNum]:
                 fHtml.write('<td><img src="../output/swing/swing{0}/ani2.gif"><br>{0}<br>{1}</td>'.format(swingNum, errors[swingNum]))
             fHtml.write('\n')
