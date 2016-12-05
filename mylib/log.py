@@ -237,6 +237,20 @@ class Reporter:
             fHtml.write('  </tr>\n')
         fHtml.write('</table>')
         fHtml.close()
+        # 平均情報をHTMLページにまとめる
+        fHtml = open('{}/clustering/mean.html'.format(self.dirName), 'w')
+        fHtml.write('<table border="1">\n')
+        for classNum in range(clusterNum):
+            fHtml.write('  <tr align="center">\n')
+            fHtml.write('    ')
+            fHtml.write('<td>{}<br>({})</td>'.format(classNum, len(clusters[classNum])))
+            fHtml.write('<td><img src="{}/mean.png" width="300" height="200"></td>'.format(classNum))
+            fHtml.write('<td><img src="{}/mean/ani.gif" width="200" height="200"></td>'.format(classNum))
+            fHtml.write('<td><img src="{}/norm/ani.gif" width="200" height="200"></td>'.format(classNum))
+            fHtml.write('\n')
+            fHtml.write('  </tr>\n')
+        fHtml.write('</table>')
+        fHtml.close()            
 
     # 各クラスの重心を記録する
     def __saveMeanSwings(self, clusters, swings, size):
