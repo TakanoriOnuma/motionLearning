@@ -65,9 +65,9 @@ def concat(img1, img2, img3, img4 = None):
 
 
 # 複数画像を1つのgifアニメに変換する
-def makeGifAnime(images, delay, fileName):
+def makeGifAnime(imgFileNames, delay, fileName):
     cmds = ['convert', '-delay', str(delay), '-loop', str(0)]
-    cmds.extend(images)
+    cmds.extend(imgFileNames)
     cmds.append(fileName)
     p = subprocess.Popen(cmds, stderr=subprocess.PIPE, shell=True)
     # エラーがあったら出力する
