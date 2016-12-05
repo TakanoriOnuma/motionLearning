@@ -186,6 +186,8 @@ class Reporter:
         self.__saveMeanSwings(clusters, swings, (pointNum, dim))
         # 重心情報からアニメーションを作成する
         mylib.util.doPython(self.pyDirName + '/directInput.py', self.dirName, str(clusterNum))
+        # 各クラスの重心を記録する
+        self.__saveMeanImages(clusters, imgDir)
         # HTMLページを作成する
         fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
         fHtml.write('<table border="1">\n')
@@ -250,6 +252,33 @@ class Reporter:
                 .format(self.dirName, classNum, 'mean', self.prop['TRAIN_NUM'], classNum)
             exeName = self.gpDirName + '/{}DNeuron_oneSwing.gp'.format(self.prop['featureNum'])
             mylib.util.doGnuplot(arg, exeName)
+
+    # 各クラスの重心を記録する（入力画像版）
+    def __saveMeanImages(self, clusters, imgDir):
+        # データを取得する
+        num = len(glob.glob(imgDir + '/swing/0/norm/*.png'))
+        for classNum in range(len(clusters)):
+            classImgs = []
+            for swingNum in clusters[classNum]:
+                imgs = []
+                for i in range(num):
+                    fileName = imgDir + '/swing/{}/norm/img{}.png'.format(swingNum, i)
+                    img = cv2.imread(fileName)
+                    height = img.shape[0]
+                    width  = img.shape[1]
+                    imgs.append(mylib.image.makeInputData(img, 'data', 0))
+                classImgs.append(imgs)
+            meanImgs = numpy.array(classImgs).mean(axis=0)
+            mylib.util.mkdir('{}/clustering/{}/norm'.format(self.dirName, classNum))
+            imgFileNames = []
+            for i in range(len(meanImgs)):
+                img = mylib.image.makeOutputData(meanImgs[i], height, width)
+                fileName = '{}/clustering/{}/norm/img{}.png'.format(self.dirName, classNum, i)
+                cv2.imwrite(fileName, img)
+                imgFileNames.append(fileName)
+            fileName = '{}/clustering/{}/norm/ani.gif'.format(self.dirName, classNum)
+            mylib.image.makeGifAnime(imgFileNames, 3, fileName)
+        
 
     # 恒等写像した出力画像を保存する
     def saveIdentityMapping(self):
