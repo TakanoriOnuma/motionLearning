@@ -188,6 +188,8 @@ class Reporter:
         mylib.util.doPython(self.pyDirName + '/directInput.py', self.dirName, str(clusterNum))
         # 各クラスの重心を記録する
         self.__saveMeanImages(clusters, imgDir)
+        # 重心の画像から軌跡を作成する
+        mylib.util.doPython(self.pyDirName + '/makeLocus.py', self.dirName, str(clusterNum))
         # HTMLページを作成する
         fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
         fHtml.write('<table border="1">\n')
@@ -247,6 +249,7 @@ class Reporter:
             fHtml.write('<td><img src="{}/mean.png" width="300" height="200"></td>'.format(classNum))
             fHtml.write('<td><img src="{}/mean/ani.gif" width="200" height="200"></td>'.format(classNum))
             fHtml.write('<td><img src="{}/norm/ani.gif" width="200" height="200"></td>'.format(classNum))
+            fHtml.write('<td><img src="{}/norm/norm.png" width="300" height="200"></td>'.format(classNum))
             fHtml.write('\n')
             fHtml.write('  </tr>\n')
         fHtml.write('</table>')
