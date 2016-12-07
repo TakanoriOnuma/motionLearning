@@ -190,6 +190,8 @@ class Reporter:
         self.__saveMeanImages(clusters, imgDir)
         # 重心の画像から軌跡を作成する
         mylib.util.doPython(self.pyDirName + '/makeLocus.py', self.dirName, str(clusterNum))
+        # クラス同士で差分をとる
+        mylib.util.doPython(self.pyDirName + '/imgDifference.py', self.dirName, str(clusterNum))
         # HTMLページを作成する
         fHtml = open('{}/clustering/clustering.html'.format(self.dirName), 'w')
         fHtml.write('<table border="1">\n')
@@ -253,7 +255,32 @@ class Reporter:
             fHtml.write('\n')
             fHtml.write('  </tr>\n')
         fHtml.write('</table>')
-        fHtml.close()            
+        fHtml.close()
+        # クラス同士の差分をHTMLページにまとめる
+        fHtml = open('{}/clustering/diff/diff.html'.format(self.dirName), 'w')
+        fHtml.write('<table border="1">\n')
+        fHtml.write('  <tr align="center">')
+        for classNum in range(clusterNum):
+            fHtml.write('<td>')
+            fHtml.write('<img src="../{0}/norm/ani.gif" width="200" height="200"><br>{0}<br>({1})'.format(classNum, len(clusters[classNum])))
+            fHtml.write('</td>\n')
+        fHtml.write('  </tr>\n')
+        fHtml.write('</table>\n')
+        fHtml.write('<br>\n')
+        
+        fHtml.write('<table border="1">\n')
+        fHtml.write('  <tr align="center"><td></td>' + ''.join(['<td>{}</td>'.format(i) for i in range(clusterNum)]) + '</tr>\n')
+        for srcClassNum in range(clusterNum):
+            fHtml.write('  <tr align="center">\n')
+            fHtml.write('    <td>{}</td>'.format(srcClassNum))
+            for compClassNum in range(clusterNum):
+                fHtml.write('<td>')
+                if srcClassNum != compClassNum:
+                    fHtml.write('<img src="{0}_{1}/ani.gif" width="200" height="200"><br>{0} vs. {1}<br>'.format(srcClassNum, compClassNum))
+                fHtml.write('</td>\n')
+            fHtml.write('  </tr>\n')
+        fHtml.write('</table>')
+        fHtml.close()        
 
     # 各クラスの重心を記録する
     def __saveMeanSwings(self, clusters, swings, size):
