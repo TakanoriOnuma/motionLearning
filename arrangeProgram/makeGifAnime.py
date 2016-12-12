@@ -31,6 +31,7 @@ for line in fErrors:
         continue
     swingNum, error = line[:-1].split('\t')
     errors.append(error)
+fErrors.close()
 
 # gifアニメをまとめてみるHTMLを作成
 dirName = '{}/output/swing'.format(DIR_NAME)
