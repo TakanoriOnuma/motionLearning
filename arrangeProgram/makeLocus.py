@@ -9,7 +9,7 @@ sys.path.append('C:\Python27\motionLearning')
 import mylib
 
 # 実行ディレクトリを設定する
-ROOT = sys.argv[1] if len(sys.argv) == 3 else 'C:/Python27/motionLearning/arrangeProgram/part4'
+ROOT = sys.argv[1] if len(sys.argv) == 3 else 'C:/Python27/motionLearning/arrangeProgram/part1'
 clusterNum = int(sys.argv[2]) if len(sys.argv) == 3 else 3
 
 # モデルの読み込み
@@ -33,11 +33,4 @@ for classNum in range(clusterNum):
     mid = model.getMiddleValue()
 
     mylib.point.savePoints(normDir + '/norm.dat', mid.data)
-
-    # グラフにする
-    arg = "path='{}'; fileName='{}'; titleName='out_neuron{}_swing/norm{}'" \
-        .format(normDir, 'norm', prop['TRAIN_NUM'], classNum)
-    exeName = 'gnuplot/{}DNeuron_oneSwing.gp'.format(prop['featureNum'])
-    mylib.util.doGnuplot(arg, exeName)
-
-
+    mylib.point.drawPoints(normDir, 'norm', 'out_neuron{}_swing/norm{}'.format(prop['TRAIN_NUM'], classNum))

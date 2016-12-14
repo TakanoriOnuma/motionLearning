@@ -52,3 +52,21 @@ def savePoints(fileName, points, separator='\t'):
         fPoints.write(separator.join([str(pt) for pt in points[i]]) + '\n')
     fPoints.close()
 
+# gnuplotを通して軌跡を描画する
+# fileNameは拡張子なしで渡す
+def drawPoints(path, fileName, titleName):
+    pts = getPoints('{}/{}.dat'.format(path, fileName))
+    dim = len(pts[0])
+    # グラフにする
+    arg = "path='{}'; fileName='{}'; titleName='{}'".format(path, fileName, titleName)
+    exeName = 'gnuplot/{}DNeuron_oneSwing.gp'.format(dim)
+    mylib.util.doGnuplot(arg, exeName)
+    
+    # 3次元の場合は結合処理をする
+    if dim == 3:
+        img1 = cv2.imread('{}/{}_view45,45.png'.format(path, fileName))
+        img2 = cv2.imread('{}/{}_view0,0.png'.format(path, fileName))
+        img3 = cv2.imread('{}/{}_view90,0.png'.format(path, fileName))
+        img4 = cv2.imread('{}/{}_view90,90.png'.format(path, fileName))
+        concatImg = mylib.image.concat(img1, img2, img3, img4)
+        cv2.imwrite('{}/{}.png'.format(path, fileName), concatImg)

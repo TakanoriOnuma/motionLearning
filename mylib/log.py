@@ -215,10 +215,8 @@ class Reporter:
             fileName = '{}/clustering/{}/mean.dat'.format(self.dirName, classNum)
             mylib.point.savePoints(fileName, meanSwing)
             # グラフにする
-            arg = "path='{}/clustering/{}'; fileName='{}'; titleName='out_neuron{}_swing/mean{}'" \
-                .format(self.dirName, classNum, 'mean', self.prop['TRAIN_NUM'], classNum)
-            exeName = self.gpDirName + '/{}DNeuron_oneSwing.gp'.format(self.prop['featureNum'])
-            mylib.util.doGnuplot(arg, exeName)
+            titleName = 'out_neuron{}_neuron_swing/mean{}'.format(self.prop['TRAIN_NUM'], classNum)
+            mylib.point.drawPoints('{}/clustering/{}'.format(self.dirName, classNum), 'mean', titleName)
 
     # 各クラスの重心を記録する（入力画像版）
     def __saveMeanImages(self, clusters, imgDir):
