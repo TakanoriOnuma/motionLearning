@@ -343,4 +343,9 @@ class Reporter:
         print '- save identity mapping.'
         mylib.util.doPython(self.pyDirName + '/saveIdentityMapping.py', self.dirName)
         print '  - make animation.'
-        mylib.util.doPython(self.pyDirName + '/makeGifAnime.py', self.dirName);
+        mylib.util.doPython(self.pyDirName + '/makeGifAnime.py', self.dirName)
+
+    # 特徴空間上の分布を記録する
+    def drawDistribution(self):
+        print '- draw distribution.'
+        mylib.util.doPython(self.pyDirName + '/calcSpace.py', self.dirName)
