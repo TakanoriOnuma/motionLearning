@@ -34,6 +34,11 @@ class Reporter:
         exeName = self.gpDirName + '/error.gp'
         mylib.util.doGnuplot(arg, exeName)
 
+    # 学習後のエラーを記録する
+    def calcFinalError(self):
+        print '- calc final error.'
+        mylib.util.doPython(self.pyDirName + '/calcFinalError.py', self.dirName)
+
     # testデータを統合する
     def integrateTestSwing(self):
         print '- integrate test swing.'

@@ -32,6 +32,19 @@ def createInputSwingDataList(rootDir):
         fileName = '{}/img{}.png'.format(rootDir, i)
     return inpList
 
+# 学習データとテストデータをまとめて読み込む
+def readDataList(rootDir, maxSwingNum, trainSwingNums):
+    trainDataList = []
+    testDataList  = []
+    for swingNum in range(maxSwingNum):
+        dataList = createInputSwingDataList(rootDir + '/' + str(swingNum))
+        swingData = np.array(dataList[:-1]).astype(np.float32)
+        if swingNum in trainSwingNums:
+            trainDataList.append(swingData)
+        else:
+            testDataList.append(swingData)
+    return np.vstack(trainDataList), np.vstack(testDataList)
+
 # 画像から入力データを作成する
 # inpType: input, empha
 def makeInputData(img, inpType, emphaValue):
