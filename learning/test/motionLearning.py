@@ -19,13 +19,14 @@ import mylib
 PROP = {
     'GPU_FLAG'    : True,
     'DATA_TYPE'   : 'normal',
-    'IMG_DIR'     : 'images5',
+    'IMG_DIR'     : 'images6',
     'EMPHA_VALUE' : 1,
     'SWING_NUM'   : 100,
-    'TRAIN_SWING' : range(41, 61),
-    'DATA_NUM'    : 560,
+    'TRAIN_SWING' : range(0, 49),
+    'DATA_NUM'    : 1521,
     'TRAIN_NUM'   : 10000,
-    'BATCH_SIZE'  : 1
+    'BATCH_SIZE'  : 1,
+    'NN_OPTIONS'  : { 'bias': False, 'beta': 0.5 }
 }
 
 # set optimizer
@@ -69,11 +70,10 @@ PROP['IMG_HEIGHT'] = int(img.shape[0])
 PROP['IMG_WIDTH']  = int(img.shape[1])
 
 # model definition
-model = mylib.NN.MyChain(PROP['IMG_SIZE'], 100, 30, 2, 30, 100, PROP['IMG_SIZE'], bias=False)
-PROP['NN']          = '-'.join([str(x) for x in model.layers])
-PROP['nums']        = [x for x in model.layers]
-PROP['midLayerNum'] = len(model) / 2
+PROP['nums']        = [PROP['IMG_SIZE'], 100, 30, 3, 30, 100, PROP['IMG_SIZE']]
+PROP['midLayerNum'] = len(PROP['nums']) / 2
 PROP['featureNum']  = PROP['nums'][PROP['midLayerNum']]
+model = mylib.NN.MyChain(*PROP['nums'], **PROP['NN_OPTIONS'])
 
 # set gpu mode if GPU_FLAG is true
 if PROP['GPU_FLAG']:
